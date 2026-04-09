@@ -12,7 +12,7 @@
   <!-- ── Sidebar ─────────────────────────────────────── -->
   <aside class="sidebar" id="sidebar">
     <div class="sidebar__brand">
-      <div class="sidebar__logo">R</div>
+      <img class="sidebar__logo-img" src="../assets/Container.png" alt="Roman Agency" />
       <div class="sidebar__brand-name">ROMAN<br><span>AGENCY</span></div>
     </div>
 
@@ -106,11 +106,7 @@
     <section class="tab-panel" data-panel="faq">
       <div class="panel-toolbar">
         <div class="toolbar-left">
-          <select id="faq-lang-filter" class="select">
-            <option value="en">English</option>
-            <option value="zh">中文</option>
-            <option value="ru">Русский</option>
-          </select>
+          <span class="count-badge" id="faq-count">— FAQs</span>
         </div>
         <button class="btn btn--primary" id="add-faq-btn">+ Add FAQ</button>
       </div>
@@ -208,34 +204,57 @@
 
   <!-- ── FAQ Edit Modal ────────────────────────────── -->
   <div class="modal-overlay" id="faq-modal" hidden>
-    <div class="modal">
+    <div class="modal" style="max-width:700px;">
       <div class="modal__header">
         <h2 id="faq-modal-title">Add FAQ</h2>
         <button class="modal__close" id="faq-modal-close">✕</button>
       </div>
       <div class="modal__body">
         <input type="hidden" id="faq-edit-id" />
-        <div class="form-group">
-          <label>Language</label>
-          <select id="faq-edit-lang" class="select">
-            <option value="en">English</option>
-            <option value="zh">中文</option>
-            <option value="ru">Русский</option>
-          </select>
+        <input type="hidden" id="faq-edit-id-zh" />
+        <input type="hidden" id="faq-edit-id-ru" />
+
+        <div class="faq-lang-section">
+          <div class="faq-lang-section__label">🇬🇧 English</div>
+          <div class="form-group">
+            <label>Question *</label>
+            <input type="text" id="faq-edit-q-en" class="input" placeholder="Enter question in English…" />
+          </div>
+          <div class="form-group">
+            <label>Answer *</label>
+            <textarea id="faq-edit-a-en" class="textarea" rows="3" placeholder="Enter answer in English…"></textarea>
+          </div>
         </div>
-        <div class="form-group">
-          <label>Question *</label>
-          <input type="text" id="faq-edit-q" class="input" placeholder="Enter question…" />
+
+        <div class="faq-lang-section">
+          <div class="faq-lang-section__label">🇨🇳 中文</div>
+          <div class="form-group">
+            <label>Question</label>
+            <input type="text" id="faq-edit-q-zh" class="input" placeholder="输入中文问题…" />
+          </div>
+          <div class="form-group">
+            <label>Answer</label>
+            <textarea id="faq-edit-a-zh" class="textarea" rows="3" placeholder="输入中文答案…"></textarea>
+          </div>
         </div>
-        <div class="form-group">
-          <label>Answer *</label>
-          <textarea id="faq-edit-a" class="textarea" rows="4" placeholder="Enter answer…"></textarea>
+
+        <div class="faq-lang-section">
+          <div class="faq-lang-section__label">🇷🇺 Русский</div>
+          <div class="form-group">
+            <label>Question</label>
+            <input type="text" id="faq-edit-q-ru" class="input" placeholder="Введите вопрос…" />
+          </div>
+          <div class="form-group">
+            <label>Answer</label>
+            <textarea id="faq-edit-a-ru" class="textarea" rows="3" placeholder="Введите ответ…"></textarea>
+          </div>
         </div>
+
         <div id="faq-error" class="form-error" hidden></div>
       </div>
       <div class="modal__footer">
         <button class="btn btn--ghost" id="faq-cancel">Cancel</button>
-        <button class="btn btn--primary" id="faq-save">Save FAQ</button>
+        <button class="btn btn--primary" id="faq-save">Save All Languages</button>
       </div>
     </div>
   </div>

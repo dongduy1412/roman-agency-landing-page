@@ -309,46 +309,63 @@ document.getElementById('upload-submit').addEventListener('click', async () => {
    FAQ TAB
    ═══════════════════════════════════════════════════════ */
 async function loadFaqs() {
-  const lang = document.getElementById('faq-lang-filter').value;
   const list = document.getElementById('faq-list');
   list.innerHTML = '<div class="loading">Loading FAQs…</div>';
 
-  const data = await apiFetch(`/api/admin/faqs?lang=${lang}`);
-  const faqs = data.data;
+  // Load all languages at once
+  const [enData, zhData, ruData] = await Promise.all([
+    apiFetch('/api/admin/faqs?lang=en'),
+    apiFetch('/api/admin/faqs?lang=zh'),
+    apiFetch('/api/admin/faqs?lang=ru'),
+  ]);
+
+  const enFaqs = enData.data || [];
+  const zhFaqs = zhData.data || [];
+  const ruFaqs = ruData.data || [];
+
+  document.getElementById('faq-count').textContent = `${enFaqs.length} FAQs`;
 
   list.innerHTML = '';
 
-  if (!faqs.length) {
+  if (!enFaqs.length) {
     list.innerHTML = '<div class="empty-state"><p>No FAQs yet. Add your first one!</p></div>';
     return;
   }
 
-  faqs.forEach(faq => {
+  enFaqs.forEach((faq, index) => {
+    const zh = zhFaqs[index] || {};
+    const ru = ruFaqs[index] || {};
+
     const card = document.createElement('div');
     card.className = 'faq-card';
     card.innerHTML = `
       <div class="faq-card__body">
-        <div class="faq-card__q">${escHtml(faq.question)}</div>
+        <div class="faq-card__q">🇬🇧 ${escHtml(faq.question)}</div>
         <div class="faq-card__a">${escHtml(faq.answer)}</div>
+        ${zh.question ? `<div class="faq-card__q" style="margin-top:8px;">🇨🇳 ${escHtml(zh.question)}</div><div class="faq-card__a">${escHtml(zh.answer)}</div>` : ''}
+        ${ru.question ? `<div class="faq-card__q" style="margin-top:8px;">🇷🇺 ${escHtml(ru.question)}</div><div class="faq-card__a">${escHtml(ru.answer)}</div>` : ''}
       </div>
       <div class="faq-card__actions">
-        <button class="btn btn--ghost btn--sm" onclick="openFaqEdit(${faq.id}, '${escHtml(faq.question).replace(/'/g, "\\'")}', '${escHtml(faq.answer).replace(/'/g, "\\'")}', '${faq.lang}')">Edit</button>
-        <button class="btn btn--danger btn--sm" onclick="deleteFaq(${faq.id})">Delete</button>
+        <button class="btn btn--ghost btn--sm" onclick="openFaqEdit(${faq.id}, ${zh.id || 'null'}, ${ru.id || 'null'})">Edit</button>
+        <button class="btn btn--danger btn--sm" onclick="deleteFaqGroup(${faq.id}, ${zh.id || 'null'}, ${ru.id || 'null'})">Delete</button>
       </div>
     `;
     list.appendChild(card);
   });
 }
 
-document.getElementById('faq-lang-filter').addEventListener('change', loadFaqs);
-
 // Add FAQ btn
 document.getElementById('add-faq-btn').addEventListener('click', () => {
   document.getElementById('faq-modal-title').textContent = 'Add FAQ';
   document.getElementById('faq-edit-id').value = '';
-  document.getElementById('faq-edit-q').value = '';
-  document.getElementById('faq-edit-a').value = '';
-  document.getElementById('faq-edit-lang').value = document.getElementById('faq-lang-filter').value;
+  document.getElementById('faq-edit-id-zh').value = '';
+  document.getElementById('faq-edit-id-ru').value = '';
+  document.getElementById('faq-edit-q-en').value = '';
+  document.getElementById('faq-edit-a-en').value = '';
+  document.getElementById('faq-edit-q-zh').value = '';
+  document.getElementById('faq-edit-a-zh').value = '';
+  document.getElementById('faq-edit-q-ru').value = '';
+  document.getElementById('faq-edit-a-ru').value = '';
   document.getElementById('faq-error').hidden = true;
   document.getElementById('faq-modal').hidden = false;
 });
@@ -361,43 +378,86 @@ document.getElementById('faq-cancel').addEventListener('click', () => {
   document.getElementById('faq-modal').hidden = true;
 });
 
-function openFaqEdit(id, question, answer, lang) {
+async function openFaqEdit(enId, zhId, ruId) {
   document.getElementById('faq-modal-title').textContent = 'Edit FAQ';
-  document.getElementById('faq-edit-id').value = id;
-  document.getElementById('faq-edit-q').value = question;
-  document.getElementById('faq-edit-a').value = answer;
-  document.getElementById('faq-edit-lang').value = lang;
+  document.getElementById('faq-edit-id').value = enId || '';
+  document.getElementById('faq-edit-id-zh').value = zhId || '';
+  document.getElementById('faq-edit-id-ru').value = ruId || '';
+
+  // Load current values
+  if (enId) {
+    const d = await apiFetch(`/api/admin/faqs/${enId}`);
+    document.getElementById('faq-edit-q-en').value = d.data?.question || '';
+    document.getElementById('faq-edit-a-en').value = d.data?.answer || '';
+  }
+  if (zhId) {
+    const d = await apiFetch(`/api/admin/faqs/${zhId}`);
+    document.getElementById('faq-edit-q-zh').value = d.data?.question || '';
+    document.getElementById('faq-edit-a-zh').value = d.data?.answer || '';
+  } else {
+    document.getElementById('faq-edit-q-zh').value = '';
+    document.getElementById('faq-edit-a-zh').value = '';
+  }
+  if (ruId) {
+    const d = await apiFetch(`/api/admin/faqs/${ruId}`);
+    document.getElementById('faq-edit-q-ru').value = d.data?.question || '';
+    document.getElementById('faq-edit-a-ru').value = d.data?.answer || '';
+  } else {
+    document.getElementById('faq-edit-q-ru').value = '';
+    document.getElementById('faq-edit-a-ru').value = '';
+  }
+
   document.getElementById('faq-error').hidden = true;
   document.getElementById('faq-modal').hidden = false;
 }
 
 document.getElementById('faq-save').addEventListener('click', async () => {
-  const id = document.getElementById('faq-edit-id').value;
-  const question = document.getElementById('faq-edit-q').value.trim();
-  const answer = document.getElementById('faq-edit-a').value.trim();
-  const lang = document.getElementById('faq-edit-lang').value;
+  const enId = document.getElementById('faq-edit-id').value;
+  const zhId = document.getElementById('faq-edit-id-zh').value;
+  const ruId = document.getElementById('faq-edit-id-ru').value;
+
+  const enQ = document.getElementById('faq-edit-q-en').value.trim();
+  const enA = document.getElementById('faq-edit-a-en').value.trim();
+  const zhQ = document.getElementById('faq-edit-q-zh').value.trim();
+  const zhA = document.getElementById('faq-edit-a-zh').value.trim();
+  const ruQ = document.getElementById('faq-edit-q-ru').value.trim();
+  const ruA = document.getElementById('faq-edit-a-ru').value.trim();
+
   const errEl = document.getElementById('faq-error');
 
-  if (!question || !answer) {
-    errEl.textContent = 'Question and answer are required';
+  if (!enQ || !enA) {
+    errEl.textContent = 'English question and answer are required';
     errEl.hidden = false;
     return;
   }
 
   try {
-    if (id) {
-      await apiFetch(`/api/admin/faqs/${id}`, {
-        method: 'PATCH',
-        body: JSON.stringify({ question, answer }),
-      });
-      toast('FAQ updated');
+    // Save EN
+    if (enId) {
+      await apiFetch(`/api/admin/faqs/${enId}`, { method: 'PATCH', body: JSON.stringify({ question: enQ, answer: enA }) });
     } else {
-      await apiFetch('/api/admin/faqs', {
-        method: 'POST',
-        body: JSON.stringify({ question, answer, lang }),
-      });
-      toast('FAQ added');
+      await apiFetch('/api/admin/faqs', { method: 'POST', body: JSON.stringify({ question: enQ, answer: enA, lang: 'en' }) });
     }
+
+    // Save ZH
+    if (zhQ && zhA) {
+      if (zhId) {
+        await apiFetch(`/api/admin/faqs/${zhId}`, { method: 'PATCH', body: JSON.stringify({ question: zhQ, answer: zhA }) });
+      } else {
+        await apiFetch('/api/admin/faqs', { method: 'POST', body: JSON.stringify({ question: zhQ, answer: zhA, lang: 'zh' }) });
+      }
+    }
+
+    // Save RU
+    if (ruQ && ruA) {
+      if (ruId) {
+        await apiFetch(`/api/admin/faqs/${ruId}`, { method: 'PATCH', body: JSON.stringify({ question: ruQ, answer: ruA }) });
+      } else {
+        await apiFetch('/api/admin/faqs', { method: 'POST', body: JSON.stringify({ question: ruQ, answer: ruA, lang: 'ru' }) });
+      }
+    }
+
+    toast('FAQ saved for all languages');
     document.getElementById('faq-modal').hidden = true;
     loadFaqs();
   } catch {
@@ -406,9 +466,11 @@ document.getElementById('faq-save').addEventListener('click', async () => {
   }
 });
 
-async function deleteFaq(id) {
-  if (!confirm('Delete this FAQ?')) return;
-  await apiFetch(`/api/admin/faqs/${id}`, { method: 'DELETE' });
+async function deleteFaqGroup(enId, zhId, ruId) {
+  if (!confirm('Delete this FAQ in all languages?')) return;
+  if (enId) await apiFetch(`/api/admin/faqs/${enId}`, { method: 'DELETE' });
+  if (zhId) await apiFetch(`/api/admin/faqs/${zhId}`, { method: 'DELETE' });
+  if (ruId) await apiFetch(`/api/admin/faqs/${ruId}`, { method: 'DELETE' });
   toast('FAQ deleted');
   loadFaqs();
 }
@@ -429,49 +491,60 @@ async function loadSettings() {
       <div class="settings-group__title">Stats</div>
       <div class="form-group">
         <label>Ad Spend Managed</label>
-        <input type="text" class="input" id="s-stat_spend" value="${settings.stat_spend || '$20M+'}" />
+        <div class="input-with-preview">
+          <input type="text" class="input" id="s-stat_spend" value="${settings.stat_spend || '20000000'}" placeholder="e.g. 20000000" />
+          <span class="input-preview" id="preview-stat_spend"></span>
+        </div>
+        <small class="form-hint">Display: $${formatStatNumber(settings.stat_spend || '20000000')}+</small>
       </div>
       <div class="form-group">
         <label>Active Accounts</label>
-        <input type="text" class="input" id="s-stat_accounts" value="${settings.stat_accounts || '50K+'}" />
+        <div class="input-with-preview">
+          <input type="text" class="input" id="s-stat_accounts" value="${settings.stat_accounts || '50000'}" placeholder="e.g. 50000" />
+        </div>
+        <small class="form-hint">Display: ${formatStatNumber(settings.stat_accounts || '50000')}+</small>
       </div>
       <div class="form-group">
-        <label>Support</label>
-        <input type="text" class="input" id="s-stat_support" value="${settings.stat_support || '24/7'}" />
+        <label>Support Hours</label>
+        <input type="text" class="input" id="s-stat_support" value="${settings.stat_support || '24'}" placeholder="e.g. 24" />
+        <small class="form-hint">Display: ${settings.stat_support || '24'}/7</small>
       </div>
       <div class="form-group">
-        <label>Refund Guarantee</label>
-        <input type="text" class="input" id="s-stat_refund" value="${settings.stat_refund || '100%'}" />
+        <label>Refund Guarantee (%)</label>
+        <input type="text" class="input" id="s-stat_refund" value="${settings.stat_refund || '100'}" placeholder="e.g. 100" />
+        <small class="form-hint">Display: ${settings.stat_refund || '100'}%</small>
       </div>
     </div>
     <div class="settings-group">
       <div class="settings-group__title">Contact</div>
       <div class="form-group">
         <label>Email</label>
-        <input type="text" class="input" id="s-contact_email" value="${settings.contact_email || ''}" />
+        <input type="email" class="input" id="s-contact_email" value="${settings.contact_email || ''}" placeholder="romanagency888@gmail.com" />
       </div>
       <div class="form-group">
         <label>Telegram (personal)</label>
-        <input type="text" class="input" id="s-contact_telegram" value="${settings.contact_telegram || ''}" />
+        <input type="url" class="input" id="s-contact_telegram" value="${settings.contact_telegram || ''}" placeholder="https://t.me/romanwarior" />
       </div>
       <div class="form-group">
         <label>Telegram Channel</label>
-        <input type="text" class="input" id="s-contact_channel" value="${settings.contact_channel || ''}" />
+        <input type="url" class="input" id="s-contact_channel" value="${settings.contact_channel || ''}" placeholder="https://t.me/romanagency" />
       </div>
       <div class="form-group">
         <label>Website</label>
-        <input type="text" class="input" id="s-contact_website" value="${settings.contact_website || ''}" />
+        <input type="url" class="input" id="s-contact_website" value="${settings.contact_website || ''}" placeholder="https://romanagency.net/" />
       </div>
     </div>
     <div class="settings-group">
       <div class="settings-group__title">Pricing</div>
       <div class="form-group">
-        <label>Service Fee</label>
-        <input type="text" class="input" id="s-pricing_fee" value="${settings.pricing_fee || '8%'}" />
+        <label>Service Fee (%)</label>
+        <input type="number" class="input" id="s-pricing_fee" value="${(settings.pricing_fee || '8').replace(/[^0-9.]/g, '')}" min="0" max="100" step="0.1" placeholder="8" />
+        <small class="form-hint">Numbers only. Display: ${(settings.pricing_fee || '8').replace(/[^0-9.]/g, '')}%</small>
       </div>
       <div class="form-group">
-        <label>Minimum Deposit</label>
-        <input type="text" class="input" id="s-pricing_deposit" value="${settings.pricing_deposit || '$100'}" />
+        <label>Minimum Deposit ($)</label>
+        <input type="number" class="input" id="s-pricing_deposit" value="${(settings.pricing_deposit || '100').replace(/[^0-9]/g, '')}" min="0" step="1" placeholder="100" />
+        <small class="form-hint">Numbers only. Display: $${(settings.pricing_deposit || '100').replace(/[^0-9]/g, '')}</small>
       </div>
     </div>
     <div class="settings-actions">
@@ -482,6 +555,14 @@ async function loadSettings() {
   document.getElementById('save-settings-btn').addEventListener('click', saveSettings);
 }
 
+function formatStatNumber(val) {
+  const n = parseInt(String(val).replace(/[^0-9]/g, ''), 10);
+  if (isNaN(n)) return val;
+  if (n >= 1000000) return (n / 1000000).toFixed(n % 1000000 === 0 ? 0 : 1) + 'M';
+  if (n >= 1000) return (n / 1000).toFixed(n % 1000 === 0 ? 0 : 1) + 'K';
+  return String(n);
+}
+
 async function saveSettings() {
   const keys = ['stat_spend', 'stat_accounts', 'stat_support', 'stat_refund',
     'contact_email', 'contact_telegram', 'contact_channel', 'contact_website',
@@ -490,7 +571,17 @@ async function saveSettings() {
   const settings = {};
   keys.forEach(key => {
     const el = document.getElementById(`s-${key}`);
-    if (el) settings[key] = el.value.trim();
+    if (!el) return;
+    let val = el.value.trim();
+    // Strip non-numeric for pricing fields
+    if (key === 'pricing_fee' || key === 'pricing_deposit') {
+      val = val.replace(/[^0-9.]/g, '');
+    }
+    // Strip non-numeric for stat fields
+    if (key.startsWith('stat_')) {
+      val = val.replace(/[^0-9]/g, '');
+    }
+    settings[key] = val;
   });
 
   await apiFetch('/api/admin/settings', {
@@ -499,6 +590,7 @@ async function saveSettings() {
   });
 
   toast('Settings saved successfully!');
+  loadSettings(); // Reload to show updated previews
 }
 
 /* ═══════════════════════════════════════════════════════

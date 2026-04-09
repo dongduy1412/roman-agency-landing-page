@@ -150,6 +150,13 @@ body.login-page {
   flex-shrink: 0;
 }
 
+.sidebar__logo-img {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  object-fit: contain;
+}
+
 .sidebar__brand-name {
   font-size: 10px;
   font-weight: 700;
@@ -493,6 +500,41 @@ body.login-page {
   gap: 6px;
   flex-shrink: 0;
   margin-top: 2px;
+}
+
+/* FAQ multi-lang modal sections */
+.faq-lang-section {
+  padding: 14px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.faq-lang-section:last-of-type {
+  border-bottom: none;
+}
+
+.faq-lang-section__label {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--gold);
+  margin-bottom: 10px;
+}
+
+/* Settings hints & number-only */
+.form-hint {
+  display: block;
+  font-size: 11px;
+  color: var(--text-faint);
+  margin-top: 4px;
+}
+
+.input-with-preview {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.input-with-preview .input {
+  flex: 1;
 }
 
 /* ── Settings Grid ──────────────────────────────────── */
