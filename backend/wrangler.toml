@@ -1,0 +1,25 @@
+#:schema node_modules/wrangler/config-schema.json
+name = "roman-agency-api"
+main = "src/index.ts"
+compatibility_date = "2026-04-01"
+compatibility_flags = ["nodejs_compat"]
+
+# ── Static Assets (Admin Panel) ──
+[assets]
+directory = "./admin"
+
+# ── Cloudflare D1 Database ──
+[[d1_databases]]
+binding = "DB"
+database_name = "roman-agency-db"
+database_id = "39f086f0-f135-4ba2-8ef5-e1b49c361fdf"
+
+# ── Cloudflare R2 Storage ──
+[[r2_buckets]]
+binding = "MEDIA"
+bucket_name = "roman-agency-media"
+
+# ── Environment Variables ──
+[vars]
+ADMIN_USERNAME = "admin"
+CORS_ORIGINS = "http://localhost:3000,http://localhost:5500,http://127.0.0.1:5500,https://romanagency.net,https://cd8fa9af.agency-landing-page-7zg.pages.dev,https://roman-agency-api.dong141220047.workers.dev,https://dev.roman-agency-frontend-dev.pages.dev,https://c53bdd61.roman-agency-frontend-dev.pages.dev"
