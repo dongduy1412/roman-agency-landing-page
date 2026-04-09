@@ -33,6 +33,10 @@
         <svg viewBox="0 0 24 24" fill="none"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><circle cx="9" cy="7" r="4" stroke="currentColor" stroke-width="1.5"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
         Subscribers
       </button>
+      <button class="nav-item" data-tab="testimonials">
+        <svg viewBox="0 0 24 24" fill="none"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        Testimonials
+      </button>
     </nav>
 
     <div class="sidebar__footer">
@@ -141,7 +145,89 @@
         </table>
       </div>
     </section>
+
+    <!-- ── Tab: Testimonials ── -->
+    <section class="tab-panel" data-panel="testimonials">
+      <div class="panel-toolbar">
+        <div class="toolbar-left">
+          <span class="count-badge" id="testimonial-count">— testimonials</span>
+        </div>
+        <button class="btn btn--primary" id="add-testimonial-btn">+ Add Testimonial</button>
+      </div>
+      <div class="faq-list" id="testimonial-list">
+        <div class="loading">Loading testimonials…</div>
+      </div>
+    </section>
   </main>
+
+  <!-- ── Testimonial Edit Modal ──────────────────────── -->
+  <div class="modal-overlay" id="testimonial-modal" hidden>
+    <div class="modal" style="max-width:700px;">
+      <div class="modal__header">
+        <h2 id="testimonial-modal-title">Add Testimonial</h2>
+        <button class="modal__close" id="testimonial-modal-close">✕</button>
+      </div>
+      <div class="modal__body">
+        <input type="hidden" id="testimonial-edit-id" />
+        <input type="hidden" id="testimonial-edit-id-zh" />
+        <input type="hidden" id="testimonial-edit-id-ru" />
+
+        <div class="faq-lang-section">
+          <div class="faq-lang-section__label">🇬🇧 English</div>
+          <div class="form-group">
+            <label>Author Name *</label>
+            <input type="text" id="testimonial-name-en" class="input" placeholder="e.g. Alex T." />
+          </div>
+          <div class="form-group">
+            <label>Author Role</label>
+            <input type="text" id="testimonial-role-en" class="input" placeholder="e.g. E-commerce, Shopify" />
+          </div>
+          <div class="form-group">
+            <label>Content *</label>
+            <textarea id="testimonial-content-en" class="textarea" rows="3" placeholder="What the client said…"></textarea>
+          </div>
+        </div>
+
+        <div class="faq-lang-section">
+          <div class="faq-lang-section__label">🇨🇳 中文</div>
+          <div class="form-group">
+            <label>Author Name</label>
+            <input type="text" id="testimonial-name-zh" class="input" placeholder="作者名" />
+          </div>
+          <div class="form-group">
+            <label>Author Role</label>
+            <input type="text" id="testimonial-role-zh" class="input" placeholder="角色" />
+          </div>
+          <div class="form-group">
+            <label>Content</label>
+            <textarea id="testimonial-content-zh" class="textarea" rows="3" placeholder="客户评价…"></textarea>
+          </div>
+        </div>
+
+        <div class="faq-lang-section">
+          <div class="faq-lang-section__label">🇷🇺 Русский</div>
+          <div class="form-group">
+            <label>Author Name</label>
+            <input type="text" id="testimonial-name-ru" class="input" placeholder="Имя автора" />
+          </div>
+          <div class="form-group">
+            <label>Author Role</label>
+            <input type="text" id="testimonial-role-ru" class="input" placeholder="Роль" />
+          </div>
+          <div class="form-group">
+            <label>Content</label>
+            <textarea id="testimonial-content-ru" class="textarea" rows="3" placeholder="Отзыв клиента…"></textarea>
+          </div>
+        </div>
+
+        <div id="testimonial-error" class="form-error" hidden></div>
+      </div>
+      <div class="modal__footer">
+        <button class="btn btn--ghost" id="testimonial-cancel">Cancel</button>
+        <button class="btn btn--primary" id="testimonial-save">Save All Languages</button>
+      </div>
+    </div>
+  </div>
 
   <!-- ── Upload Modal ──────────────────────────────── -->
   <div class="modal-overlay" id="upload-modal" hidden>
