@@ -225,23 +225,251 @@ if (navToggle && siteNav) {
   });
 }
 
+/* ── Published Media Hydration ── */
+(async function () {
+  if (!window.fetch) return;
+
+  const bindings = [
+    { selector: 'meta[property="og:image"]', section: "meta", slot: "og-image", attr: "content" },
+    { selector: 'meta[name="twitter:image"]', section: "meta", slot: "og-image", attr: "content" },
+    { selector: 'link[rel="icon"]', section: "favicon", slot: "favicon", attr: "href" },
+    { selector: ".hero__media", section: "meta", slot: "og-image", attr: "background-image" },
+    { selector: ".brand__logo", section: "brand", slot: "logo", attr: "src", syncAlt: true },
+    { selector: ".hero-video-card__media source", section: "hero", slot: "video", attr: "src", reloadMedia: true },
+    { selector: ".marquee__logo--image img", section: "marquee", slot: "logo-1", attr: "src", syncAlt: true, all: true },
+    { selector: ".service-grid .service-card:nth-child(1) img", section: "services", slot: "card-1", attr: "src", syncAlt: true },
+    { selector: ".service-grid .service-card:nth-child(2) img", section: "services", slot: "card-2", attr: "src", syncAlt: true },
+    { selector: ".service-grid .service-card:nth-child(3) img", section: "services", slot: "card-3", attr: "src", syncAlt: true },
+    { selector: ".resource-visual__gallery .resource-visual__frame:nth-child(1) img", section: "resources", slot: "item-1", attr: "src", syncAlt: true },
+    { selector: ".resource-visual__gallery .resource-visual__frame:nth-child(2) img", section: "resources", slot: "item-2", attr: "src", syncAlt: true },
+    { selector: "#proof .proof-group:nth-of-type(1) .proof-grid .proof-card:nth-child(1) img", section: "proof-campaign", slot: "screenshot-1", attr: "src", syncAlt: true },
+    { selector: "#proof .proof-group:nth-of-type(1) .proof-grid .proof-card:nth-child(2) img", section: "proof-campaign", slot: "screenshot-2", attr: "src", syncAlt: true },
+    { selector: "#proof .proof-group:nth-of-type(1) .proof-grid .proof-card:nth-child(3) img", section: "proof-campaign", slot: "screenshot-3", attr: "src", syncAlt: true },
+    { selector: "#proof .proof-group:nth-of-type(2) .proof-grid .proof-card:nth-child(1) img", section: "proof-system", slot: "system-1", attr: "src", syncAlt: true },
+    { selector: "#proof .proof-group:nth-of-type(2) .proof-grid .proof-card:nth-child(2) img", section: "proof-system", slot: "system-2", attr: "src", syncAlt: true },
+    { selector: "#proof .proof-group:nth-of-type(3) .proof-grid .proof-card:nth-child(1) img", section: "proof-bm", slot: "bm-1", attr: "src", syncAlt: true },
+    { selector: "#proof .proof-group:nth-of-type(3) .proof-grid .proof-card:nth-child(2) img", section: "proof-bm", slot: "bm-2", attr: "src", syncAlt: true },
+    { selector: "#proof .proof-group:nth-of-type(3) .proof-grid .proof-card:nth-child(3) img", section: "proof-bm", slot: "bm-3", attr: "src", syncAlt: true },
+    { selector: "#proof .proof-group:nth-of-type(4) .proof-grid .proof-card:nth-child(1) img", section: "proof-sigma", slot: "item-1", attr: "src", syncAlt: true },
+    { selector: "#proof .proof-group:nth-of-type(4) .proof-grid .proof-card:nth-child(2) img", section: "proof-sigma", slot: "item-2", attr: "src", syncAlt: true },
+    { selector: "#proof .proof-group:nth-of-type(4) .proof-grid .proof-card:nth-child(3) img", section: "proof-sigma", slot: "item-3", attr: "src", syncAlt: true },
+    { selector: "#proof .proof-group:nth-of-type(4) .proof-grid .proof-card:nth-child(4) img", section: "proof-sigma", slot: "item-4", attr: "src", syncAlt: true },
+    { selector: "#proof .proof-group:nth-of-type(5) .proof-grid .proof-card:nth-child(1) img", section: "proof-affiliate", slot: "item-1", attr: "src", syncAlt: true },
+    { selector: "#proof .proof-group:nth-of-type(5) .proof-grid .proof-card:nth-child(2) img", section: "proof-affiliate", slot: "item-2", attr: "src", syncAlt: true },
+    { selector: "#proof .proof-group:nth-of-type(5) .proof-grid .proof-card:nth-child(3) img", section: "proof-affiliate", slot: "item-3", attr: "src", syncAlt: true },
+    { selector: "#proof .proof-group:nth-of-type(5) .proof-grid .proof-card:nth-child(4) img", section: "proof-affiliate", slot: "item-4", attr: "src", syncAlt: true },
+  ];
+
+  const PUBLISHED_CONFIG_URL = "https://roman-agency-api.dong141220047.workers.dev/api/published-config";
+
+  try {
+    const response = await fetch(PUBLISHED_CONFIG_URL, {
+      headers: { Accept: "application/json" },
+    });
+
+    if (!response.ok) return;
+
+    const payload = await response.json();
+    const media = payload?.data?.media;
+    if (!media) return;
+
+    bindings.forEach((binding) => {
+      const entry = getPublishedMediaEntry(media, binding.section, binding.slot);
+      if (!entry?.url) return;
+
+      const elements = binding.all
+        ? document.querySelectorAll(binding.selector)
+        : [document.querySelector(binding.selector)].filter(Boolean);
+
+      elements.forEach((element) => {
+        applyPublishedMedia(element, entry, binding);
+      });
+    });
+  } catch {
+    // Keep bundled assets as fallback when the API is unavailable.
+  }
+
+  function getPublishedMediaEntry(media, section, slot) {
+    const sectionData = media?.[section];
+    if (!sectionData) return null;
+    if (Array.isArray(sectionData.items)) {
+      return sectionData.items.find((item) => item.slot === slot) || null;
+    }
+    return sectionData[slot] || null;
+  }
+
+  function applyPublishedMedia(element, entry, binding) {
+    if (binding.attr === "background-image") {
+      element.style.backgroundImage = `url("${entry.url}")`;
+    } else {
+      element.setAttribute(binding.attr, entry.url);
+    }
+
+    if (binding.syncAlt && element.tagName === "IMG" && entry.alt) {
+      element.alt = entry.alt;
+    }
+
+    if (binding.reloadMedia && element.parentElement?.tagName === "VIDEO") {
+      element.parentElement.load();
+    }
+  }
+})();
+
 /* ── Newsletter Form ── */
+const ROMAN_API = "https://roman-agency-api.dong141220047.workers.dev";
+
 const newsletterForm = document.getElementById("newsletter-form");
 
 if (newsletterForm) {
-  newsletterForm.addEventListener("submit", (e) => {
+  newsletterForm.addEventListener("submit", async (e) => {
     e.preventDefault();
-    const email = newsletterForm.querySelector("input[type='email']");
-    if (email && email.value.trim()) {
-      // Replace with real API call when backend is ready
-      email.value = "";
-      email.placeholder = "Thanks! We'll be in touch.";
-      setTimeout(() => {
-        email.placeholder = "Your email";
-      }, 3000);
+    const emailInput = newsletterForm.querySelector("input[type='email']");
+    const email = emailInput?.value.trim();
+    if (!email) return;
+
+    try {
+      const res = await fetch(ROMAN_API + "/api/subscribe", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        emailInput.value = "";
+        emailInput.placeholder = "Thanks! We'll be in touch.";
+        setTimeout(() => { emailInput.placeholder = "Your email"; }, 3000);
+      } else {
+        emailInput.placeholder = data.error?.message || "Something went wrong";
+        setTimeout(() => { emailInput.placeholder = "Your email"; }, 3000);
+      }
+    } catch {
+      emailInput.value = "";
+      emailInput.placeholder = "Thanks! We'll be in touch.";
+      setTimeout(() => { emailInput.placeholder = "Your email"; }, 3000);
     }
   });
 }
+
+/* ── Dynamic FAQ Hydration ── */
+(async function () {
+  if (!window.fetch) return;
+  const faqList = document.querySelector("#faq .faq-list");
+  if (!faqList) return;
+
+  try {
+    const lang = document.documentElement.lang === "zh-CN" ? "zh"
+               : document.documentElement.lang === "ru" ? "ru"
+               : "en";
+    const res = await fetch(ROMAN_API + "/api/faqs?lang=" + lang, {
+      headers: { Accept: "application/json" },
+    });
+    if (!res.ok) return;
+    const payload = await res.json();
+    const faqs = payload?.data;
+    if (!Array.isArray(faqs) || !faqs.length) return;
+
+    faqList.innerHTML = "";
+
+    faqs.forEach((faq, i) => {
+      const article = document.createElement("article");
+      article.className = "faq-item" + (i === 0 ? " is-open" : "");
+      article.innerHTML = `
+        <button class="faq-item__trigger" type="button" aria-expanded="${i === 0 ? 'true' : 'false'}">
+          <span>${escapeHtml(faq.question)}</span>
+          <span class="faq-item__icon"></span>
+        </button>
+        <div class="faq-item__panel">
+          <p>${escapeHtml(faq.answer)}</p>
+        </div>
+      `;
+      faqList.appendChild(article);
+    });
+
+    // Re-bind accordion
+    faqList.querySelectorAll(".faq-item").forEach((item) => {
+      const trigger = item.querySelector(".faq-item__trigger");
+      if (!trigger) return;
+      trigger.addEventListener("click", () => {
+        const isOpen = item.classList.contains("is-open");
+        faqList.querySelectorAll(".faq-item").forEach((entry) => {
+          entry.classList.remove("is-open");
+          const btn = entry.querySelector(".faq-item__trigger");
+          if (btn) btn.setAttribute("aria-expanded", "false");
+        });
+        if (!isOpen) {
+          item.classList.add("is-open");
+          trigger.setAttribute("aria-expanded", "true");
+        }
+      });
+    });
+  } catch {
+    // Keep hardcoded FAQs as fallback
+  }
+
+  function escapeHtml(str) {
+    const d = document.createElement("div");
+    d.textContent = str || "";
+    return d.innerHTML;
+  }
+})();
+
+/* ── Dynamic Settings Hydration (Stats + Contact) ── */
+(async function () {
+  if (!window.fetch) return;
+
+  try {
+    const res = await fetch(ROMAN_API + "/api/settings?lang=en", {
+      headers: { Accept: "application/json" },
+    });
+    if (!res.ok) return;
+    const payload = await res.json();
+    const raw = payload?.data;
+    if (!Array.isArray(raw) || !raw.length) return;
+
+    const settings = {};
+    raw.forEach((s) => { settings[s.key] = s.value; });
+
+    // Stats section — update data-target values for animated counters
+    const statMap = {
+      stat_spend:    { selector: '[data-i18n="stats.label1"]', field: 'data-target', prefix: '$', suffix: '+' },
+      stat_accounts: { selector: '[data-i18n="stats.label2"]', field: 'data-target', suffix: '+' },
+      stat_support:  { selector: '[data-i18n="stats.label3"]', field: 'data-target', suffix: '/7' },
+      stat_refund:   { selector: '[data-i18n="stats.label4"]', field: 'data-target', suffix: '%' },
+    };
+
+    Object.entries(statMap).forEach(([key, cfg]) => {
+      if (!settings[key]) return;
+      const label = document.querySelector(cfg.selector);
+      if (!label) return;
+      const card = label.closest(".stat-card");
+      if (!card) return;
+      const numEl = card.querySelector(".stat-item__number[data-target]");
+      if (!numEl) return;
+      const numericValue = settings[key].replace(/[^0-9]/g, "");
+      if (numericValue) numEl.setAttribute("data-target", numericValue);
+    });
+
+    // Contact info
+    if (settings.contact_email) {
+      const el = document.querySelector('a[href*="romanagency888@gmail.com"]');
+      if (el) { el.href = "mailto:" + settings.contact_email; el.textContent = settings.contact_email; }
+    }
+    if (settings.contact_telegram) {
+      const el = document.querySelector('a[href*="t.me/romanwarior"]');
+      if (el) el.href = settings.contact_telegram;
+    }
+    if (settings.contact_channel) {
+      const el = document.querySelector('a[href*="t.me/romanagency"]');
+      if (el) { el.href = settings.contact_channel; el.textContent = settings.contact_channel; }
+    }
+    if (settings.contact_website) {
+      const el = document.querySelector('a[href*="romanagency.net/"]');
+      if (el) { el.href = settings.contact_website; el.textContent = settings.contact_website.replace(/^https?:\/\//, ""); }
+    }
+  } catch {
+    // Keep hardcoded values as fallback
+  }
+})();
 
 /* ── Scroll Reveal (IntersectionObserver) ── */
 const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
