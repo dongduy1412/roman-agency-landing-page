@@ -41,6 +41,7 @@ const TAB_TITLES = {
   faq: 'FAQ Manager',
   settings: 'Site Settings',
   subscribers: 'Subscribers',
+  testimonials: 'Testimonials',
 };
 
 navItems.forEach(item => {
@@ -55,6 +56,7 @@ navItems.forEach(item => {
     if (tab === 'faq') loadFaqs();
     else if (tab === 'settings') loadSettings();
     else if (tab === 'subscribers') loadSubscribers();
+    else if (tab === 'testimonials') loadTestimonials();
   });
 });
 
@@ -659,6 +661,164 @@ document.getElementById('export-csv-btn').addEventListener('click', async (e) =>
     toast(err.message || 'Export failed', 'error');
   }
 });
+
+/* ═══════════════════════════════════════════════════════
+   TESTIMONIALS TAB
+   ═══════════════════════════════════════════════════════ */
+async function loadTestimonials() {
+  const list = document.getElementById('testimonial-list');
+  list.innerHTML = '<div class="loading">Loading testimonials…</div>';
+
+  const [enData, zhData, ruData] = await Promise.all([
+    apiFetch('/api/admin/testimonials?lang=en'),
+    apiFetch('/api/admin/testimonials?lang=zh'),
+    apiFetch('/api/admin/testimonials?lang=ru'),
+  ]);
+
+  const enItems = enData.data || [];
+  const zhItems = zhData.data || [];
+  const ruItems = ruData.data || [];
+
+  document.getElementById('testimonial-count').textContent = `${enItems.length} testimonials`;
+
+  list.innerHTML = '';
+
+  if (!enItems.length) {
+    list.innerHTML = '<div class="empty-state"><p>No testimonials yet. Add your first one!</p></div>';
+    return;
+  }
+
+  enItems.forEach((item, index) => {
+    const zh = zhItems[index] || {};
+    const ru = ruItems[index] || {};
+
+    const card = document.createElement('div');
+    card.className = 'faq-card';
+    card.innerHTML = `
+      <div class="faq-card__body">
+        <div class="faq-card__q">🇬🇧 ${escHtml(item.author_name)} — <span style="color:var(--text-dim);font-weight:400">${escHtml(item.author_role)}</span></div>
+        <div class="faq-card__a">"${escHtml(item.content)}"</div>
+        ${zh.author_name ? `<div class="faq-card__q" style="margin-top:8px;">🇨🇳 ${escHtml(zh.author_name)} — <span style="color:var(--text-dim);font-weight:400">${escHtml(zh.author_role)}</span></div><div class="faq-card__a">"${escHtml(zh.content)}"</div>` : ''}
+        ${ru.author_name ? `<div class="faq-card__q" style="margin-top:8px;">🇷🇺 ${escHtml(ru.author_name)} — <span style="color:var(--text-dim);font-weight:400">${escHtml(ru.author_role)}</span></div><div class="faq-card__a">"${escHtml(ru.content)}"</div>` : ''}
+      </div>
+      <div class="faq-card__actions">
+        <button class="btn btn--ghost btn--sm" onclick="openTestimonialEdit(${item.id}, ${zh.id || 'null'}, ${ru.id || 'null'})">Edit</button>
+        <button class="btn btn--danger btn--sm" onclick="deleteTestimonialGroup(${item.id}, ${zh.id || 'null'}, ${ru.id || 'null'})">Delete</button>
+      </div>
+    `;
+    list.appendChild(card);
+  });
+}
+
+document.getElementById('add-testimonial-btn').addEventListener('click', () => {
+  document.getElementById('testimonial-modal-title').textContent = 'Add Testimonial';
+  document.getElementById('testimonial-edit-id').value = '';
+  document.getElementById('testimonial-edit-id-zh').value = '';
+  document.getElementById('testimonial-edit-id-ru').value = '';
+  ['en', 'zh', 'ru'].forEach(l => {
+    document.getElementById(`testimonial-name-${l}`).value = '';
+    document.getElementById(`testimonial-role-${l}`).value = '';
+    document.getElementById(`testimonial-content-${l}`).value = '';
+  });
+  document.getElementById('testimonial-error').hidden = true;
+  document.getElementById('testimonial-modal').hidden = false;
+});
+
+document.getElementById('testimonial-modal-close').addEventListener('click', () => {
+  document.getElementById('testimonial-modal').hidden = true;
+});
+document.getElementById('testimonial-cancel').addEventListener('click', () => {
+  document.getElementById('testimonial-modal').hidden = true;
+});
+
+async function openTestimonialEdit(enId, zhId, ruId) {
+  document.getElementById('testimonial-modal-title').textContent = 'Edit Testimonial';
+  document.getElementById('testimonial-edit-id').value = enId || '';
+  document.getElementById('testimonial-edit-id-zh').value = zhId || '';
+  document.getElementById('testimonial-edit-id-ru').value = ruId || '';
+
+  for (const [id, lang] of [[enId, 'en'], [zhId, 'zh'], [ruId, 'ru']]) {
+    if (id) {
+      const d = await apiFetch(`/api/admin/testimonials/${id}`);
+      document.getElementById(`testimonial-name-${lang}`).value = d.data?.author_name || '';
+      document.getElementById(`testimonial-role-${lang}`).value = d.data?.author_role || '';
+      document.getElementById(`testimonial-content-${lang}`).value = d.data?.content || '';
+    } else {
+      document.getElementById(`testimonial-name-${lang}`).value = '';
+      document.getElementById(`testimonial-role-${lang}`).value = '';
+      document.getElementById(`testimonial-content-${lang}`).value = '';
+    }
+  }
+
+  document.getElementById('testimonial-error').hidden = true;
+  document.getElementById('testimonial-modal').hidden = false;
+}
+
+document.getElementById('testimonial-save').addEventListener('click', async () => {
+  const enId = document.getElementById('testimonial-edit-id').value;
+  const zhId = document.getElementById('testimonial-edit-id-zh').value;
+  const ruId = document.getElementById('testimonial-edit-id-ru').value;
+  const errEl = document.getElementById('testimonial-error');
+
+  const enName = document.getElementById('testimonial-name-en').value.trim();
+  const enRole = document.getElementById('testimonial-role-en').value.trim();
+  const enContent = document.getElementById('testimonial-content-en').value.trim();
+
+  if (!enName || !enContent) {
+    errEl.textContent = 'English name and content are required';
+    errEl.hidden = false;
+    return;
+  }
+
+  try {
+    // EN
+    if (enId) {
+      await apiFetch(`/api/admin/testimonials/${enId}`, { method: 'PATCH', body: JSON.stringify({ author_name: enName, author_role: enRole, content: enContent }) });
+    } else {
+      await apiFetch('/api/admin/testimonials', { method: 'POST', body: JSON.stringify({ author_name: enName, author_role: enRole, content: enContent, lang: 'en' }) });
+    }
+
+    // ZH
+    const zhName = document.getElementById('testimonial-name-zh').value.trim();
+    const zhContent = document.getElementById('testimonial-content-zh').value.trim();
+    if (zhName && zhContent) {
+      const zhRole = document.getElementById('testimonial-role-zh').value.trim();
+      if (zhId) {
+        await apiFetch(`/api/admin/testimonials/${zhId}`, { method: 'PATCH', body: JSON.stringify({ author_name: zhName, author_role: zhRole, content: zhContent }) });
+      } else {
+        await apiFetch('/api/admin/testimonials', { method: 'POST', body: JSON.stringify({ author_name: zhName, author_role: zhRole, content: zhContent, lang: 'zh' }) });
+      }
+    }
+
+    // RU
+    const ruName = document.getElementById('testimonial-name-ru').value.trim();
+    const ruContent = document.getElementById('testimonial-content-ru').value.trim();
+    if (ruName && ruContent) {
+      const ruRole = document.getElementById('testimonial-role-ru').value.trim();
+      if (ruId) {
+        await apiFetch(`/api/admin/testimonials/${ruId}`, { method: 'PATCH', body: JSON.stringify({ author_name: ruName, author_role: ruRole, content: ruContent }) });
+      } else {
+        await apiFetch('/api/admin/testimonials', { method: 'POST', body: JSON.stringify({ author_name: ruName, author_role: ruRole, content: ruContent, lang: 'ru' }) });
+      }
+    }
+
+    toast('Testimonial saved for all languages');
+    document.getElementById('testimonial-modal').hidden = true;
+    loadTestimonials();
+  } catch {
+    errEl.textContent = 'Failed to save testimonial';
+    errEl.hidden = false;
+  }
+});
+
+async function deleteTestimonialGroup(enId, zhId, ruId) {
+  if (!confirm('Delete this testimonial in all languages?')) return;
+  if (enId) await apiFetch(`/api/admin/testimonials/${enId}`, { method: 'DELETE' });
+  if (zhId) await apiFetch(`/api/admin/testimonials/${zhId}`, { method: 'DELETE' });
+  if (ruId) await apiFetch(`/api/admin/testimonials/${ruId}`, { method: 'DELETE' });
+  toast('Testimonial deleted');
+  loadTestimonials();
+}
 
 /* ═══════════════════════════════════════════════════════
    UTILITIES

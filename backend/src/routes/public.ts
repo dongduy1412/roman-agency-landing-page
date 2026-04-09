@@ -17,6 +17,20 @@ publicRoutes.get('/faqs', async (c) => {
   return c.json({ success: true, data: results, meta: { lang, total: results.length } })
 })
 
+// ── GET /api/testimonials ────────────────────────────────
+publicRoutes.get('/testimonials', async (c) => {
+  const lang = c.req.query('lang') || 'en'
+
+  const { results } = await c.env.DB.prepare(
+    `SELECT id, author_name, author_role, content, sort_order, lang
+     FROM testimonials
+     WHERE lang = ? AND is_active = 1
+     ORDER BY sort_order ASC`
+  ).bind(lang).all()
+
+  return c.json({ success: true, data: results, meta: { lang, total: results.length } })
+})
+
 // ── GET /api/media ───────────────────────────────────────
 publicRoutes.get('/media', async (c) => {
   const section = c.req.query('section')
