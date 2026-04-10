@@ -4,6 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Roman Agency — Admin Login</title>
+  <link rel="icon" type="image/png" href="./public/image-removebg-preview.png" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="./admin.css" />
@@ -12,7 +13,7 @@
   <div class="login-wrap">
     <div class="login-card">
       <div class="login-brand">
-        <div class="login-brand__logo">R</div>
+        <img class="login-brand__logo-img" src="./public/Container.png" alt="Roman Agency" />
         <div>
           <div class="login-brand__name">ROMAN AGENCY</div>
           <div class="login-brand__sub">Admin Console</div>
@@ -42,9 +43,7 @@
   <script>
     document.getElementById('yr').textContent = new Date().getFullYear();
 
-    const API = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
-      ? 'http://localhost:8787'
-      : window.location.origin;
+    const API = window.location.origin;
 
     // Redirect if already logged in
     if (localStorage.getItem('ra_token')) {
