@@ -3,9 +3,7 @@
    Handles auth, navigation, media CRUD, FAQ, settings
    ════════════════════════════════════════════════════════ */
 
-const API = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
-  ? 'http://localhost:8787'
-  : window.location.origin;
+const API = window.location.origin;
 
 // ── Auth guard ───────────────────────────────────────────
 const token = localStorage.getItem('ra_token');
@@ -23,6 +21,76 @@ document.getElementById('sidebar-user').textContent =
   localStorage.getItem('ra_username') || 'admin';
 
 const publishVersionBadge = document.getElementById('publish-version-badge');
+
+const ADMIN_ASSET_PREVIEW_FILES = new Set([
+  'Container.png',
+  'image-removebg-preview.png',
+  'meta-logo.png',
+  'service-rental.png',
+  'service-sales.png',
+  'service-managed.png',
+  'SD1.png',
+  'SD2.png',
+  'SD3.png',
+  'SD5.png',
+  'SD6.png',
+  'SD7.png',
+  'SD-extra.jpg',
+  'BM-1.jpg',
+  'BM-2.jpg',
+  'BM-3.jpg',
+  'gallery-large-1.jpg',
+  'gallery-large-2.jpg',
+  'gallery-large-3.jpg',
+  'gallery-large-4.jpg',
+  'gallery-large-5.jpg',
+  'gallery-large-7.jpg',
+  'gallery-large-8.jpg',
+  'hero-bg.png',
+]);
+
+const ADMIN_ASSET_PREVIEW_2X_MAP = {
+  'gallery-large-1.jpg': 'gallery-large-1.png',
+  'gallery-large-2.jpg': 'gallery-large-2.png',
+  'gallery-large-3.jpg': 'gallery-large-3.png',
+  'gallery-large-4.jpg': 'gallery-large-4.png',
+  'gallery-large-5.jpg': 'gallery-large-5.png',
+  'gallery-large-6.jpg': 'gallery-large-6.png',
+  'gallery-large-7.jpg': 'gallery-large-7.png',
+  'gallery-large-8.jpg': 'gallery-large-8.png',
+  'hero-bg.png': 'hero-bg.png',
+};
+
+const FAQ_LANG_META = {
+  en: {
+    label: '🇬🇧 English',
+    questionLabel: 'Question *',
+    answerLabel: 'Answer *',
+    questionPlaceholder: 'Enter question in English…',
+    answerPlaceholder: 'Enter answer in English…',
+  },
+  zh: {
+    label: '🇨🇳 中文',
+    questionLabel: 'Question',
+    answerLabel: 'Answer',
+    questionPlaceholder: '输入中文问题…',
+    answerPlaceholder: '输入中文答案…',
+  },
+  ru: {
+    label: '🇷🇺 Русский',
+    questionLabel: 'Question',
+    answerLabel: 'Answer',
+    questionPlaceholder: 'Введите вопрос…',
+    answerPlaceholder: 'Введите ответ…',
+  },
+};
+
+let activeFaqLang = 'en';
+const faqDraft = {
+  en: { question: '', answer: '' },
+  zh: { question: '', answer: '' },
+  ru: { question: '', answer: '' },
+};
 
 // ── Logout ───────────────────────────────────────────────
 document.getElementById('logout-btn').addEventListener('click', () => {
@@ -135,12 +203,14 @@ async function loadMedia(section = '') {
 
     sectionItems.forEach(item => {
       const isVideo = item.mime_type?.startsWith('video/');
+      const previewSrc = getAdminMediaPreviewUrl(item);
+      const previewMeta = getAdminMediaPreviewMeta(item, previewSrc);
       const card = document.createElement('div');
       card.className = 'media-card';
       card.innerHTML = `
         ${isVideo
           ? `<div class="media-card__thumb media-card__thumb--video">🎬 Video</div>`
-          : `<img class="media-card__thumb" src="${item.r2_url}" alt="${item.alt_text || item.file_name}" loading="lazy" />`
+          : `<img class="media-card__thumb" src="${previewSrc}" alt="${item.alt_text || item.file_name}" loading="lazy" />`
         }
         <div class="media-card__body">
           <div class="media-card__section-row">
@@ -149,6 +219,7 @@ async function loadMedia(section = '') {
           </div>
           <div class="media-card__name">${escHtml(item.file_name)}</div>
           <div class="media-card__meta">Slot: ${escHtml(item.slot || 'auto')} · ${formatBytes(item.file_size)}</div>
+          <div class="media-card__meta">Preview: ${escHtml(previewMeta)}</div>
           ${item.alt_text ? `<div class="media-card__meta">Alt: ${escHtml(item.alt_text)}</div>` : ''}
           ${item.caption ? `<div class="media-card__meta">Caption: ${escHtml(item.caption)}</div>` : ''}
         </div>
@@ -167,6 +238,34 @@ async function loadMedia(section = '') {
     group.appendChild(cards);
     grid.appendChild(group);
   });
+}
+
+function getAdminMediaPreviewUrl(item) {
+  if (item.mime_type?.startsWith('video/')) return item.r2_url;
+
+  const retinaFile = ADMIN_ASSET_PREVIEW_2X_MAP[item.file_name];
+  if (retinaFile) {
+    return `./public/asset-preview-2x/${encodeURIComponent(retinaFile)}`;
+  }
+
+  if (ADMIN_ASSET_PREVIEW_FILES.has(item.file_name)) {
+    return `./public/asset-preview/${encodeURIComponent(item.file_name)}`;
+  }
+
+  return item.r2_url;
+}
+
+function getAdminMediaPreviewMeta(item, previewSrc) {
+  if (previewSrc === item.r2_url) {
+    return item.r2_url ? 'R2 / published file' : 'No preview source';
+  }
+
+  const retinaFile = ADMIN_ASSET_PREVIEW_2X_MAP[item.file_name];
+  if (retinaFile) {
+    return `frontend asset 2x: ${retinaFile}`;
+  }
+
+  return `frontend asset: ${item.file_name}`;
 }
 
 // Initial load
@@ -314,7 +413,6 @@ async function loadFaqs() {
   const list = document.getElementById('faq-list');
   list.innerHTML = '<div class="loading">Loading FAQs…</div>';
 
-  // Load all languages at once
   const [enData, zhData, ruData] = await Promise.all([
     apiFetch('/api/admin/faqs?lang=en'),
     apiFetch('/api/admin/faqs?lang=zh'),
@@ -324,6 +422,8 @@ async function loadFaqs() {
   const enFaqs = enData.data || [];
   const zhFaqs = zhData.data || [];
   const ruFaqs = ruData.data || [];
+  const zhByOrder = new Map(zhFaqs.map(faq => [faq.sort_order, faq]));
+  const ruByOrder = new Map(ruFaqs.map(faq => [faq.sort_order, faq]));
 
   document.getElementById('faq-count').textContent = `${enFaqs.length} FAQs`;
 
@@ -334,21 +434,21 @@ async function loadFaqs() {
     return;
   }
 
-  enFaqs.forEach((faq, index) => {
-    const zh = zhFaqs[index] || {};
-    const ru = ruFaqs[index] || {};
+  enFaqs.forEach((faq) => {
+    const zh = zhByOrder.get(faq.sort_order) || {};
+    const ru = ruByOrder.get(faq.sort_order) || {};
+    const translationCount = [zh.question ? 1 : 0, ru.question ? 1 : 0].reduce((sum, count) => sum + count, 0);
 
     const card = document.createElement('div');
     card.className = 'faq-card';
     card.innerHTML = `
       <div class="faq-card__body">
-        <div class="faq-card__q">🇬🇧 ${escHtml(faq.question)}</div>
+        <div class="faq-card__q">${escHtml(faq.question)}</div>
         <div class="faq-card__a">${escHtml(faq.answer)}</div>
-        ${zh.question ? `<div class="faq-card__q" style="margin-top:8px;">🇨🇳 ${escHtml(zh.question)}</div><div class="faq-card__a">${escHtml(zh.answer)}</div>` : ''}
-        ${ru.question ? `<div class="faq-card__q" style="margin-top:8px;">🇷🇺 ${escHtml(ru.question)}</div><div class="faq-card__a">${escHtml(ru.answer)}</div>` : ''}
+        <div class="faq-card__meta">${translationCount ? `${translationCount} optional translation(s)` : 'Original content'}</div>
       </div>
       <div class="faq-card__actions">
-        <button class="btn btn--ghost btn--sm" onclick="openFaqEdit(${faq.id}, ${zh.id || 'null'}, ${ru.id || 'null'})">Edit</button>
+        <button class="btn btn--ghost btn--sm" onclick="openFaqEdit(${faq.id}, ${zh.id || 'null'}, ${ru.id || 'null'}, ${faq.sort_order || 'null'})">Edit</button>
         <button class="btn btn--danger btn--sm" onclick="deleteFaqGroup(${faq.id}, ${zh.id || 'null'}, ${ru.id || 'null'})">Delete</button>
       </div>
     `;
@@ -356,19 +456,66 @@ async function loadFaqs() {
   });
 }
 
+const faqLangTabs = document.querySelectorAll('.faq-lang-switcher__tab');
+const faqActiveLangLabel = document.getElementById('faq-active-lang-label');
+const faqActiveQuestionLabel = document.getElementById('faq-active-question-label');
+const faqActiveAnswerLabel = document.getElementById('faq-active-answer-label');
+const faqQuestionInput = document.getElementById('faq-edit-question');
+const faqAnswerInput = document.getElementById('faq-edit-answer');
+
+function resetFaqDraft() {
+  Object.keys(faqDraft).forEach((lang) => {
+    faqDraft[lang].question = '';
+    faqDraft[lang].answer = '';
+  });
+}
+
+function syncActiveFaqDraft() {
+  faqDraft[activeFaqLang].question = faqQuestionInput.value;
+  faqDraft[activeFaqLang].answer = faqAnswerInput.value;
+}
+
+function renderActiveFaqLang() {
+  const meta = FAQ_LANG_META[activeFaqLang];
+  const draft = faqDraft[activeFaqLang];
+
+  faqActiveLangLabel.textContent = meta.label;
+  faqActiveQuestionLabel.textContent = meta.questionLabel;
+  faqActiveAnswerLabel.textContent = meta.answerLabel;
+  faqQuestionInput.placeholder = meta.questionPlaceholder;
+  faqAnswerInput.placeholder = meta.answerPlaceholder;
+  faqQuestionInput.value = draft.question;
+  faqAnswerInput.value = draft.answer;
+
+  faqLangTabs.forEach((tab) => {
+    tab.classList.toggle('is-active', tab.dataset.lang === activeFaqLang);
+  });
+}
+
+function setActiveFaqLang(lang) {
+  syncActiveFaqDraft();
+  activeFaqLang = lang;
+  renderActiveFaqLang();
+}
+
+faqLangTabs.forEach((tab) => {
+  tab.addEventListener('click', () => setActiveFaqLang(tab.dataset.lang));
+});
+
+faqQuestionInput.addEventListener('input', syncActiveFaqDraft);
+faqAnswerInput.addEventListener('input', syncActiveFaqDraft);
+
 // Add FAQ btn
 document.getElementById('add-faq-btn').addEventListener('click', () => {
   document.getElementById('faq-modal-title').textContent = 'Add FAQ';
   document.getElementById('faq-edit-id').value = '';
   document.getElementById('faq-edit-id-zh').value = '';
   document.getElementById('faq-edit-id-ru').value = '';
-  document.getElementById('faq-edit-q-en').value = '';
-  document.getElementById('faq-edit-a-en').value = '';
-  document.getElementById('faq-edit-q-zh').value = '';
-  document.getElementById('faq-edit-a-zh').value = '';
-  document.getElementById('faq-edit-q-ru').value = '';
-  document.getElementById('faq-edit-a-ru').value = '';
+  document.getElementById('faq-edit-sort-order').value = '';
   document.getElementById('faq-error').hidden = true;
+  resetFaqDraft();
+  activeFaqLang = 'en';
+  renderActiveFaqLang();
   document.getElementById('faq-modal').hidden = false;
 });
 
@@ -380,86 +527,98 @@ document.getElementById('faq-cancel').addEventListener('click', () => {
   document.getElementById('faq-modal').hidden = true;
 });
 
-async function openFaqEdit(enId, zhId, ruId) {
+async function openFaqEdit(enId, zhId, ruId, sortOrder) {
   document.getElementById('faq-modal-title').textContent = 'Edit FAQ';
   document.getElementById('faq-edit-id').value = enId || '';
   document.getElementById('faq-edit-id-zh').value = zhId || '';
   document.getElementById('faq-edit-id-ru').value = ruId || '';
+  document.getElementById('faq-edit-sort-order').value = sortOrder || '';
 
-  // Load current values
-  if (enId) {
-    const d = await apiFetch(`/api/admin/faqs/${enId}`);
-    document.getElementById('faq-edit-q-en').value = d.data?.question || '';
-    document.getElementById('faq-edit-a-en').value = d.data?.answer || '';
-  }
-  if (zhId) {
-    const d = await apiFetch(`/api/admin/faqs/${zhId}`);
-    document.getElementById('faq-edit-q-zh').value = d.data?.question || '';
-    document.getElementById('faq-edit-a-zh').value = d.data?.answer || '';
-  } else {
-    document.getElementById('faq-edit-q-zh').value = '';
-    document.getElementById('faq-edit-a-zh').value = '';
-  }
-  if (ruId) {
-    const d = await apiFetch(`/api/admin/faqs/${ruId}`);
-    document.getElementById('faq-edit-q-ru').value = d.data?.question || '';
-    document.getElementById('faq-edit-a-ru').value = d.data?.answer || '';
-  } else {
-    document.getElementById('faq-edit-q-ru').value = '';
-    document.getElementById('faq-edit-a-ru').value = '';
+  resetFaqDraft();
+
+  const [enData, zhData, ruData] = await Promise.all([
+    enId ? apiFetch(`/api/admin/faqs/${enId}`) : Promise.resolve(null),
+    zhId ? apiFetch(`/api/admin/faqs/${zhId}`) : Promise.resolve(null),
+    ruId ? apiFetch(`/api/admin/faqs/${ruId}`) : Promise.resolve(null),
+  ]);
+
+  faqDraft.en.question = enData?.data?.question || '';
+  faqDraft.en.answer = enData?.data?.answer || '';
+  faqDraft.zh.question = zhData?.data?.question || '';
+  faqDraft.zh.answer = zhData?.data?.answer || '';
+  faqDraft.ru.question = ruData?.data?.question || '';
+  faqDraft.ru.answer = ruData?.data?.answer || '';
+
+  if (!sortOrder && enData?.data?.sort_order) {
+    document.getElementById('faq-edit-sort-order').value = enData.data.sort_order;
   }
 
   document.getElementById('faq-error').hidden = true;
+  activeFaqLang = 'en';
+  renderActiveFaqLang();
   document.getElementById('faq-modal').hidden = false;
 }
 
 document.getElementById('faq-save').addEventListener('click', async () => {
+  syncActiveFaqDraft();
+
   const enId = document.getElementById('faq-edit-id').value;
   const zhId = document.getElementById('faq-edit-id-zh').value;
   const ruId = document.getElementById('faq-edit-id-ru').value;
+  const sortOrder = document.getElementById('faq-edit-sort-order').value;
 
-  const enQ = document.getElementById('faq-edit-q-en').value.trim();
-  const enA = document.getElementById('faq-edit-a-en').value.trim();
-  const zhQ = document.getElementById('faq-edit-q-zh').value.trim();
-  const zhA = document.getElementById('faq-edit-a-zh').value.trim();
-  const ruQ = document.getElementById('faq-edit-q-ru').value.trim();
-  const ruA = document.getElementById('faq-edit-a-ru').value.trim();
+  const enQ = faqDraft.en.question.trim();
+  const enA = faqDraft.en.answer.trim();
+  const zhQ = faqDraft.zh.question.trim();
+  const zhA = faqDraft.zh.answer.trim();
+  const ruQ = faqDraft.ru.question.trim();
+  const ruA = faqDraft.ru.answer.trim();
 
   const errEl = document.getElementById('faq-error');
 
   if (!enQ || !enA) {
     errEl.textContent = 'English question and answer are required';
     errEl.hidden = false;
+    if (activeFaqLang !== 'en') {
+      activeFaqLang = 'en';
+      renderActiveFaqLang();
+    }
     return;
   }
 
   try {
-    // Save EN
+    let finalSortOrder = sortOrder;
+
     if (enId) {
       await apiFetch(`/api/admin/faqs/${enId}`, { method: 'PATCH', body: JSON.stringify({ question: enQ, answer: enA }) });
     } else {
-      await apiFetch('/api/admin/faqs', { method: 'POST', body: JSON.stringify({ question: enQ, answer: enA, lang: 'en' }) });
+      const created = await apiFetch('/api/admin/faqs', { method: 'POST', body: JSON.stringify({ question: enQ, answer: enA, lang: 'en' }) });
+      finalSortOrder = created.data?.sort_order || '';
     }
 
-    // Save ZH
+    const translationPayload = (question, answer) => {
+      const payload = { question, answer };
+      if (finalSortOrder) payload.sort_order = Number(finalSortOrder);
+      return payload;
+    };
+
     if (zhQ && zhA) {
       if (zhId) {
         await apiFetch(`/api/admin/faqs/${zhId}`, { method: 'PATCH', body: JSON.stringify({ question: zhQ, answer: zhA }) });
       } else {
-        await apiFetch('/api/admin/faqs', { method: 'POST', body: JSON.stringify({ question: zhQ, answer: zhA, lang: 'zh' }) });
+        await apiFetch('/api/admin/faqs', { method: 'POST', body: JSON.stringify({ ...translationPayload(zhQ, zhA), lang: 'zh' }) });
       }
     }
 
-    // Save RU
     if (ruQ && ruA) {
       if (ruId) {
         await apiFetch(`/api/admin/faqs/${ruId}`, { method: 'PATCH', body: JSON.stringify({ question: ruQ, answer: ruA }) });
       } else {
-        await apiFetch('/api/admin/faqs', { method: 'POST', body: JSON.stringify({ question: ruQ, answer: ruA, lang: 'ru' }) });
+        await apiFetch('/api/admin/faqs', { method: 'POST', body: JSON.stringify({ ...translationPayload(ruQ, ruA), lang: 'ru' }) });
       }
     }
 
-    toast('FAQ saved for all languages');
+    toast('FAQ saved');
     document.getElementById('faq-modal').hidden = true;
     loadFaqs();
   } catch {
@@ -467,6 +626,8 @@ document.getElementById('faq-save').addEventListener('click', async () => {
     errEl.hidden = false;
   }
 });
+
+renderActiveFaqLang();
 
 async function deleteFaqGroup(enId, zhId, ruId) {
   if (!confirm('Delete this FAQ in all languages?')) return;
@@ -482,39 +643,55 @@ async function deleteFaqGroup(enId, zhId, ruId) {
    ═══════════════════════════════════════════════════════ */
 async function loadSettings() {
   const form = document.getElementById('settings-form');
+  const saveBtn = document.getElementById('save-settings-btn');
   form.innerHTML = '<div class="loading">Loading settings…</div>';
+  saveBtn.disabled = true;
 
   const data = await apiFetch('/api/admin/settings?lang=en');
   const settings = {};
   data.data.forEach(s => { settings[s.key] = s.value; });
+
+  const statSpend = (settings.stat_spend || '20000000').replace(/[^0-9]/g, '');
+  const statAccounts = (settings.stat_accounts || '50000').replace(/[^0-9]/g, '');
+  const statSupport = (settings.stat_support || '24').replace(/[^0-9]/g, '');
+  const statRefund = (settings.stat_refund || '100').replace(/[^0-9]/g, '');
+  const pricingFee = (settings.pricing_fee || '8').replace(/[^0-9.]/g, '');
+  const pricingDeposit = (settings.pricing_deposit || '100').replace(/[^0-9]/g, '');
 
   form.innerHTML = `
     <div class="settings-group">
       <div class="settings-group__title">Stats</div>
       <div class="form-group">
         <label>Ad Spend Managed</label>
-        <div class="input-with-preview">
-          <input type="text" class="input" id="s-stat_spend" value="${settings.stat_spend || '20000000'}" placeholder="e.g. 20000000" />
-          <span class="input-preview" id="preview-stat_spend"></span>
+        <div class="input-inline">
+          <input type="number" class="input" id="s-stat_spend" value="${statSpend}" min="0" step="1" placeholder="20000000" />
+          <span class="input-suffix">(USD)</span>
         </div>
-        <small class="form-hint">Display: $${formatStatNumber(settings.stat_spend || '20000000')}+</small>
+        <small class="form-hint">Display on site: $${formatStatNumber(statSpend)}+</small>
       </div>
       <div class="form-group">
         <label>Active Accounts</label>
-        <div class="input-with-preview">
-          <input type="text" class="input" id="s-stat_accounts" value="${settings.stat_accounts || '50000'}" placeholder="e.g. 50000" />
+        <div class="input-inline">
+          <input type="number" class="input" id="s-stat_accounts" value="${statAccounts}" min="0" step="1" placeholder="50000" />
+          <span class="input-suffix">(accounts)</span>
         </div>
-        <small class="form-hint">Display: ${formatStatNumber(settings.stat_accounts || '50000')}+</small>
+        <small class="form-hint">Display on site: ${formatStatNumber(statAccounts)}+</small>
       </div>
       <div class="form-group">
         <label>Support Hours</label>
-        <input type="text" class="input" id="s-stat_support" value="${settings.stat_support || '24'}" placeholder="e.g. 24" />
-        <small class="form-hint">Display: ${settings.stat_support || '24'}/7</small>
+        <div class="input-inline">
+          <input type="number" class="input" id="s-stat_support" value="${statSupport}" min="0" step="1" placeholder="24" />
+          <span class="input-suffix">(hours/day)</span>
+        </div>
+        <small class="form-hint">Display on site: ${statSupport}/7</small>
       </div>
       <div class="form-group">
-        <label>Refund Guarantee (%)</label>
-        <input type="text" class="input" id="s-stat_refund" value="${settings.stat_refund || '100'}" placeholder="e.g. 100" />
-        <small class="form-hint">Display: ${settings.stat_refund || '100'}%</small>
+        <label>Refund Guarantee</label>
+        <div class="input-inline">
+          <input type="number" class="input" id="s-stat_refund" value="${statRefund}" min="0" max="100" step="1" placeholder="100" />
+          <span class="input-suffix">(%)</span>
+        </div>
+        <small class="form-hint">Display on site: ${statRefund}%</small>
       </div>
     </div>
     <div class="settings-group">
@@ -539,22 +716,26 @@ async function loadSettings() {
     <div class="settings-group">
       <div class="settings-group__title">Pricing</div>
       <div class="form-group">
-        <label>Service Fee (%)</label>
-        <input type="number" class="input" id="s-pricing_fee" value="${(settings.pricing_fee || '8').replace(/[^0-9.]/g, '')}" min="0" max="100" step="0.1" placeholder="8" />
-        <small class="form-hint">Numbers only. Display: ${(settings.pricing_fee || '8').replace(/[^0-9.]/g, '')}%</small>
+        <label>Service Fee</label>
+        <div class="input-inline">
+          <input type="number" class="input" id="s-pricing_fee" value="${pricingFee}" min="0" max="100" step="0.1" placeholder="8" />
+          <span class="input-suffix">(%)</span>
+        </div>
+        <small class="form-hint">Numbers only.</small>
       </div>
       <div class="form-group">
-        <label>Minimum Deposit ($)</label>
-        <input type="number" class="input" id="s-pricing_deposit" value="${(settings.pricing_deposit || '100').replace(/[^0-9]/g, '')}" min="0" step="1" placeholder="100" />
-        <small class="form-hint">Numbers only. Display: $${(settings.pricing_deposit || '100').replace(/[^0-9]/g, '')}</small>
+        <label>Minimum Deposit</label>
+        <div class="input-inline">
+          <input type="number" class="input" id="s-pricing_deposit" value="${pricingDeposit}" min="0" step="1" placeholder="100" />
+          <span class="input-suffix">(USD)</span>
+        </div>
+        <small class="form-hint">Numbers only.</small>
       </div>
-    </div>
-    <div class="settings-actions">
-      <button class="btn btn--primary" id="save-settings-btn">Save All Settings</button>
     </div>
   `;
 
-  document.getElementById('save-settings-btn').addEventListener('click', saveSettings);
+  saveBtn.disabled = false;
+  saveBtn.onclick = saveSettings;
 }
 
 function formatStatNumber(val) {
@@ -669,41 +850,29 @@ async function loadTestimonials() {
   const list = document.getElementById('testimonial-list');
   list.innerHTML = '<div class="loading">Loading testimonials…</div>';
 
-  const [enData, zhData, ruData] = await Promise.all([
-    apiFetch('/api/admin/testimonials?lang=en'),
-    apiFetch('/api/admin/testimonials?lang=zh'),
-    apiFetch('/api/admin/testimonials?lang=ru'),
-  ]);
+  const data = await apiFetch('/api/admin/testimonials?lang=en');
+  const items = data.data || [];
 
-  const enItems = enData.data || [];
-  const zhItems = zhData.data || [];
-  const ruItems = ruData.data || [];
-
-  document.getElementById('testimonial-count').textContent = `${enItems.length} testimonials`;
+  document.getElementById('testimonial-count').textContent = `${items.length} testimonials`;
 
   list.innerHTML = '';
 
-  if (!enItems.length) {
+  if (!items.length) {
     list.innerHTML = '<div class="empty-state"><p>No testimonials yet. Add your first one!</p></div>';
     return;
   }
 
-  enItems.forEach((item, index) => {
-    const zh = zhItems[index] || {};
-    const ru = ruItems[index] || {};
-
+  items.forEach((item) => {
     const card = document.createElement('div');
     card.className = 'faq-card';
     card.innerHTML = `
       <div class="faq-card__body">
-        <div class="faq-card__q">🇬🇧 ${escHtml(item.author_name)} — <span style="color:var(--text-dim);font-weight:400">${escHtml(item.author_role)}</span></div>
+        <div class="faq-card__q">${escHtml(item.author_name)}${item.author_role ? ` — <span style="color:var(--text-dim);font-weight:400">${escHtml(item.author_role)}</span>` : ''}</div>
         <div class="faq-card__a">"${escHtml(item.content)}"</div>
-        ${zh.author_name ? `<div class="faq-card__q" style="margin-top:8px;">🇨🇳 ${escHtml(zh.author_name)} — <span style="color:var(--text-dim);font-weight:400">${escHtml(zh.author_role)}</span></div><div class="faq-card__a">"${escHtml(zh.content)}"</div>` : ''}
-        ${ru.author_name ? `<div class="faq-card__q" style="margin-top:8px;">🇷🇺 ${escHtml(ru.author_name)} — <span style="color:var(--text-dim);font-weight:400">${escHtml(ru.author_role)}</span></div><div class="faq-card__a">"${escHtml(ru.content)}"</div>` : ''}
       </div>
       <div class="faq-card__actions">
-        <button class="btn btn--ghost btn--sm" onclick="openTestimonialEdit(${item.id}, ${zh.id || 'null'}, ${ru.id || 'null'})">Edit</button>
-        <button class="btn btn--danger btn--sm" onclick="deleteTestimonialGroup(${item.id}, ${zh.id || 'null'}, ${ru.id || 'null'})">Delete</button>
+        <button class="btn btn--ghost btn--sm" onclick="openTestimonialEdit(${item.id})">Edit</button>
+        <button class="btn btn--danger btn--sm" onclick="deleteTestimonial(${item.id})">Delete</button>
       </div>
     `;
     list.appendChild(card);
@@ -713,13 +882,9 @@ async function loadTestimonials() {
 document.getElementById('add-testimonial-btn').addEventListener('click', () => {
   document.getElementById('testimonial-modal-title').textContent = 'Add Testimonial';
   document.getElementById('testimonial-edit-id').value = '';
-  document.getElementById('testimonial-edit-id-zh').value = '';
-  document.getElementById('testimonial-edit-id-ru').value = '';
-  ['en', 'zh', 'ru'].forEach(l => {
-    document.getElementById(`testimonial-name-${l}`).value = '';
-    document.getElementById(`testimonial-role-${l}`).value = '';
-    document.getElementById(`testimonial-content-${l}`).value = '';
-  });
+  document.getElementById('testimonial-name-en').value = '';
+  document.getElementById('testimonial-role-en').value = '';
+  document.getElementById('testimonial-content-en').value = '';
   document.getElementById('testimonial-error').hidden = true;
   document.getElementById('testimonial-modal').hidden = false;
 });
@@ -731,23 +896,19 @@ document.getElementById('testimonial-cancel').addEventListener('click', () => {
   document.getElementById('testimonial-modal').hidden = true;
 });
 
-async function openTestimonialEdit(enId, zhId, ruId) {
+async function openTestimonialEdit(id) {
   document.getElementById('testimonial-modal-title').textContent = 'Edit Testimonial';
-  document.getElementById('testimonial-edit-id').value = enId || '';
-  document.getElementById('testimonial-edit-id-zh').value = zhId || '';
-  document.getElementById('testimonial-edit-id-ru').value = ruId || '';
+  document.getElementById('testimonial-edit-id').value = id || '';
 
-  for (const [id, lang] of [[enId, 'en'], [zhId, 'zh'], [ruId, 'ru']]) {
-    if (id) {
-      const d = await apiFetch(`/api/admin/testimonials/${id}`);
-      document.getElementById(`testimonial-name-${lang}`).value = d.data?.author_name || '';
-      document.getElementById(`testimonial-role-${lang}`).value = d.data?.author_role || '';
-      document.getElementById(`testimonial-content-${lang}`).value = d.data?.content || '';
-    } else {
-      document.getElementById(`testimonial-name-${lang}`).value = '';
-      document.getElementById(`testimonial-role-${lang}`).value = '';
-      document.getElementById(`testimonial-content-${lang}`).value = '';
-    }
+  if (id) {
+    const d = await apiFetch(`/api/admin/testimonials/${id}`);
+    document.getElementById('testimonial-name-en').value = d.data?.author_name || '';
+    document.getElementById('testimonial-role-en').value = d.data?.author_role || '';
+    document.getElementById('testimonial-content-en').value = d.data?.content || '';
+  } else {
+    document.getElementById('testimonial-name-en').value = '';
+    document.getElementById('testimonial-role-en').value = '';
+    document.getElementById('testimonial-content-en').value = '';
   }
 
   document.getElementById('testimonial-error').hidden = true;
@@ -755,54 +916,27 @@ async function openTestimonialEdit(enId, zhId, ruId) {
 }
 
 document.getElementById('testimonial-save').addEventListener('click', async () => {
-  const enId = document.getElementById('testimonial-edit-id').value;
-  const zhId = document.getElementById('testimonial-edit-id-zh').value;
-  const ruId = document.getElementById('testimonial-edit-id-ru').value;
+  const id = document.getElementById('testimonial-edit-id').value;
   const errEl = document.getElementById('testimonial-error');
 
-  const enName = document.getElementById('testimonial-name-en').value.trim();
-  const enRole = document.getElementById('testimonial-role-en').value.trim();
-  const enContent = document.getElementById('testimonial-content-en').value.trim();
+  const name = document.getElementById('testimonial-name-en').value.trim();
+  const role = document.getElementById('testimonial-role-en').value.trim();
+  const content = document.getElementById('testimonial-content-en').value.trim();
 
-  if (!enName || !enContent) {
-    errEl.textContent = 'English name and content are required';
+  if (!name || !content) {
+    errEl.textContent = 'Author name and content are required';
     errEl.hidden = false;
     return;
   }
 
   try {
-    // EN
-    if (enId) {
-      await apiFetch(`/api/admin/testimonials/${enId}`, { method: 'PATCH', body: JSON.stringify({ author_name: enName, author_role: enRole, content: enContent }) });
+    if (id) {
+      await apiFetch(`/api/admin/testimonials/${id}`, { method: 'PATCH', body: JSON.stringify({ author_name: name, author_role: role, content }) });
     } else {
-      await apiFetch('/api/admin/testimonials', { method: 'POST', body: JSON.stringify({ author_name: enName, author_role: enRole, content: enContent, lang: 'en' }) });
+      await apiFetch('/api/admin/testimonials', { method: 'POST', body: JSON.stringify({ author_name: name, author_role: role, content, lang: 'en' }) });
     }
 
-    // ZH
-    const zhName = document.getElementById('testimonial-name-zh').value.trim();
-    const zhContent = document.getElementById('testimonial-content-zh').value.trim();
-    if (zhName && zhContent) {
-      const zhRole = document.getElementById('testimonial-role-zh').value.trim();
-      if (zhId) {
-        await apiFetch(`/api/admin/testimonials/${zhId}`, { method: 'PATCH', body: JSON.stringify({ author_name: zhName, author_role: zhRole, content: zhContent }) });
-      } else {
-        await apiFetch('/api/admin/testimonials', { method: 'POST', body: JSON.stringify({ author_name: zhName, author_role: zhRole, content: zhContent, lang: 'zh' }) });
-      }
-    }
-
-    // RU
-    const ruName = document.getElementById('testimonial-name-ru').value.trim();
-    const ruContent = document.getElementById('testimonial-content-ru').value.trim();
-    if (ruName && ruContent) {
-      const ruRole = document.getElementById('testimonial-role-ru').value.trim();
-      if (ruId) {
-        await apiFetch(`/api/admin/testimonials/${ruId}`, { method: 'PATCH', body: JSON.stringify({ author_name: ruName, author_role: ruRole, content: ruContent }) });
-      } else {
-        await apiFetch('/api/admin/testimonials', { method: 'POST', body: JSON.stringify({ author_name: ruName, author_role: ruRole, content: ruContent, lang: 'ru' }) });
-      }
-    }
-
-    toast('Testimonial saved for all languages');
+    toast('Testimonial saved');
     document.getElementById('testimonial-modal').hidden = true;
     loadTestimonials();
   } catch {
@@ -811,11 +945,9 @@ document.getElementById('testimonial-save').addEventListener('click', async () =
   }
 });
 
-async function deleteTestimonialGroup(enId, zhId, ruId) {
-  if (!confirm('Delete this testimonial in all languages?')) return;
-  if (enId) await apiFetch(`/api/admin/testimonials/${enId}`, { method: 'DELETE' });
-  if (zhId) await apiFetch(`/api/admin/testimonials/${zhId}`, { method: 'DELETE' });
-  if (ruId) await apiFetch(`/api/admin/testimonials/${ruId}`, { method: 'DELETE' });
+async function deleteTestimonial(id) {
+  if (!confirm('Delete this testimonial?')) return;
+  await apiFetch(`/api/admin/testimonials/${id}`, { method: 'DELETE' });
   toast('Testimonial deleted');
   loadTestimonials();
 }
@@ -828,22 +960,6 @@ function formatBytes(bytes) {
   if (bytes < 1024) return `${bytes} B`;
   if (bytes < 1048576) return `${(bytes / 1024).toFixed(1)} KB`;
   return `${(bytes / 1048576).toFixed(1)} MB`;
-}
-
-async function loadPublishPreview() {
-  const box = document.getElementById('publish-preview-box');
-  box.textContent = 'Loading preview…';
-
-  const data = await apiFetch('/api/admin/publish/preview');
-  const preview = data.data;
-
-  box.innerHTML = `
-    <div><strong>Next version:</strong> v${preview.summary.nextVersion}</div>
-    <div><strong>Sections:</strong> ${preview.summary.sections}</div>
-    <div><strong>Items:</strong> ${preview.summary.items}</div>
-    <div><strong>Hash:</strong> <code>${preview.summary.hash.slice(0, 16)}…</code></div>
-    <div><strong>Has changes:</strong> ${preview.diff.hasChanges ? 'Yes' : 'No'}</div>
-  `;
 }
 
 async function loadPublishHistory() {
@@ -877,14 +993,8 @@ async function rollbackRelease(id, version) {
   if (!confirm(`Rollback live site to v${version}?`)) return;
   await apiFetch(`/api/admin/publish/${id}/rollback`, { method: 'POST' });
   toast(`Rolled back to v${version}`);
-  await loadPublishPreview();
   await loadPublishHistory();
 }
-
-document.getElementById('publish-preview-btn').addEventListener('click', async () => {
-  await loadPublishPreview();
-  toast('Publish preview updated');
-});
 
 document.getElementById('publish-btn').addEventListener('click', async () => {
   const notes = prompt('Publish notes (optional):', '') || '';
@@ -894,7 +1004,6 @@ document.getElementById('publish-btn').addEventListener('click', async () => {
   });
 
   toast(`Published v${data.data.version}`);
-  await loadPublishPreview();
   await loadPublishHistory();
 });
 

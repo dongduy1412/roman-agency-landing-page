@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Roman Agency — Admin Dashboard</title>
-  <link rel="icon" type="image/png" href="/api/public-media/favicon/47a0d13b-46c9-4ac1-8174-4387a8b67515.png" />
+  <link rel="icon" type="image/png" href="./public/image-removebg-preview.png" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="./admin.css" />
@@ -13,8 +13,7 @@
   <!-- ── Sidebar ─────────────────────────────────────── -->
   <aside class="sidebar" id="sidebar">
     <div class="sidebar__brand">
-      <img class="sidebar__logo-img" src="/api/public-media/brand/a36a0c29-d469-49ef-9015-4fa99e059aac.png" alt="Roman Agency" />
-      <div class="sidebar__brand-name">ROMAN<br><span>AGENCY</span></div>
+      <img class="sidebar__logo-img" src="./public/Container.png" alt="Roman Agency" />
     </div>
 
     <nav class="sidebar__nav">
@@ -81,7 +80,6 @@
           </select>
         </div>
         <div class="toolbar-right" style="display:flex;gap:12px;flex-wrap:wrap;justify-content:flex-end;">
-          <button class="btn btn--ghost" id="publish-preview-btn">Preview Publish</button>
           <button class="btn btn--primary" id="publish-btn">Publish Changes</button>
           <button class="btn btn--primary" id="upload-btn">
             <svg viewBox="0 0 24 24" fill="none" width="16" height="16"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
@@ -89,11 +87,7 @@
           </button>
         </div>
       </div>
-      <div class="settings-grid" style="margin-bottom:20px;grid-template-columns:1fr 1fr;gap:16px;">
-        <div class="settings-group">
-          <div class="settings-group__title">Publish Preview</div>
-          <div id="publish-preview-box" class="footer-copy footer-copy--small">No preview generated yet.</div>
-        </div>
+      <div class="settings-grid" style="margin-bottom:20px;grid-template-columns:1fr;gap:16px;">
         <div class="settings-group">
           <div class="settings-group__title">Publish History</div>
           <div id="publish-history-box" class="footer-copy footer-copy--small">No publish history yet.</div>
@@ -122,6 +116,9 @@
 
     <!-- ── Tab: Settings ── -->
     <section class="tab-panel" data-panel="settings">
+      <div class="settings-actions-top">
+        <button class="btn btn--primary" id="save-settings-btn" disabled>Save All Settings</button>
+      </div>
       <div class="settings-grid" id="settings-form">
         <div class="loading">Loading settings…</div>
       </div>
@@ -170,62 +167,25 @@
       </div>
       <div class="modal__body">
         <input type="hidden" id="testimonial-edit-id" />
-        <input type="hidden" id="testimonial-edit-id-zh" />
-        <input type="hidden" id="testimonial-edit-id-ru" />
 
-        <div class="faq-lang-section">
-          <div class="faq-lang-section__label">🇬🇧 English</div>
-          <div class="form-group">
-            <label>Author Name *</label>
-            <input type="text" id="testimonial-name-en" class="input" placeholder="e.g. Alex T." />
-          </div>
-          <div class="form-group">
-            <label>Author Role</label>
-            <input type="text" id="testimonial-role-en" class="input" placeholder="e.g. E-commerce, Shopify" />
-          </div>
-          <div class="form-group">
-            <label>Content *</label>
-            <textarea id="testimonial-content-en" class="textarea" rows="3" placeholder="What the client said…"></textarea>
-          </div>
+        <div class="form-group">
+          <label>Author Name *</label>
+          <input type="text" id="testimonial-name-en" class="input" placeholder="e.g. Alex T." />
         </div>
-
-        <div class="faq-lang-section">
-          <div class="faq-lang-section__label">🇨🇳 中文</div>
-          <div class="form-group">
-            <label>Author Name</label>
-            <input type="text" id="testimonial-name-zh" class="input" placeholder="作者名" />
-          </div>
-          <div class="form-group">
-            <label>Author Role</label>
-            <input type="text" id="testimonial-role-zh" class="input" placeholder="角色" />
-          </div>
-          <div class="form-group">
-            <label>Content</label>
-            <textarea id="testimonial-content-zh" class="textarea" rows="3" placeholder="客户评价…"></textarea>
-          </div>
+        <div class="form-group">
+          <label>Author Role</label>
+          <input type="text" id="testimonial-role-en" class="input" placeholder="e.g. E-commerce, Shopify" />
         </div>
-
-        <div class="faq-lang-section">
-          <div class="faq-lang-section__label">🇷🇺 Русский</div>
-          <div class="form-group">
-            <label>Author Name</label>
-            <input type="text" id="testimonial-name-ru" class="input" placeholder="Имя автора" />
-          </div>
-          <div class="form-group">
-            <label>Author Role</label>
-            <input type="text" id="testimonial-role-ru" class="input" placeholder="Роль" />
-          </div>
-          <div class="form-group">
-            <label>Content</label>
-            <textarea id="testimonial-content-ru" class="textarea" rows="3" placeholder="Отзыв клиента…"></textarea>
-          </div>
+        <div class="form-group">
+          <label>Content *</label>
+          <textarea id="testimonial-content-en" class="textarea" rows="3" placeholder="What the client said…"></textarea>
         </div>
 
         <div id="testimonial-error" class="form-error" hidden></div>
       </div>
       <div class="modal__footer">
         <button class="btn btn--ghost" id="testimonial-cancel">Cancel</button>
-        <button class="btn btn--primary" id="testimonial-save">Save All Languages</button>
+        <button class="btn btn--primary" id="testimonial-save">Save Testimonial</button>
       </div>
     </div>
   </div>
@@ -300,40 +260,23 @@
         <input type="hidden" id="faq-edit-id" />
         <input type="hidden" id="faq-edit-id-zh" />
         <input type="hidden" id="faq-edit-id-ru" />
+        <input type="hidden" id="faq-edit-sort-order" />
 
-        <div class="faq-lang-section">
-          <div class="faq-lang-section__label">🇬🇧 English</div>
-          <div class="form-group">
-            <label>Question *</label>
-            <input type="text" id="faq-edit-q-en" class="input" placeholder="Enter question in English…" />
-          </div>
-          <div class="form-group">
-            <label>Answer *</label>
-            <textarea id="faq-edit-a-en" class="textarea" rows="3" placeholder="Enter answer in English…"></textarea>
-          </div>
+        <div class="faq-lang-switcher" id="faq-lang-switcher">
+          <button type="button" class="faq-lang-switcher__tab is-active" data-lang="en">🇬🇧 English</button>
+          <button type="button" class="faq-lang-switcher__tab" data-lang="zh">🇨🇳 中文</button>
+          <button type="button" class="faq-lang-switcher__tab" data-lang="ru">🇷🇺 Русский</button>
         </div>
 
         <div class="faq-lang-section">
-          <div class="faq-lang-section__label">🇨🇳 中文</div>
+          <div class="faq-lang-section__label" id="faq-active-lang-label">🇬🇧 English</div>
           <div class="form-group">
-            <label>Question</label>
-            <input type="text" id="faq-edit-q-zh" class="input" placeholder="输入中文问题…" />
+            <label id="faq-active-question-label">Question *</label>
+            <input type="text" id="faq-edit-question" class="input" placeholder="Enter question in English…" />
           </div>
           <div class="form-group">
-            <label>Answer</label>
-            <textarea id="faq-edit-a-zh" class="textarea" rows="3" placeholder="输入中文答案…"></textarea>
-          </div>
-        </div>
-
-        <div class="faq-lang-section">
-          <div class="faq-lang-section__label">🇷🇺 Русский</div>
-          <div class="form-group">
-            <label>Question</label>
-            <input type="text" id="faq-edit-q-ru" class="input" placeholder="Введите вопрос…" />
-          </div>
-          <div class="form-group">
-            <label>Answer</label>
-            <textarea id="faq-edit-a-ru" class="textarea" rows="3" placeholder="Введите ответ…"></textarea>
+            <label id="faq-active-answer-label">Answer *</label>
+            <textarea id="faq-edit-answer" class="textarea" rows="3" placeholder="Enter answer in English…"></textarea>
           </div>
         </div>
 
@@ -341,7 +284,7 @@
       </div>
       <div class="modal__footer">
         <button class="btn btn--ghost" id="faq-cancel">Cancel</button>
-        <button class="btn btn--primary" id="faq-save">Save All Languages</button>
+        <button class="btn btn--primary" id="faq-save">Save FAQ</button>
       </div>
     </div>
   </div>
