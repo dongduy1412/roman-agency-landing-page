@@ -82,6 +82,18 @@ export interface PublishRelease {
   created_at: string
 }
 
+export interface Testimonial {
+  id: number
+  author_name: string
+  author_role: string
+  content: string
+  lang: string
+  sort_order: number
+  is_active: number
+  created_at: string
+  updated_at: string
+}
+
 // ── API Response Envelope ───────────────────────────────
 export interface ApiSuccess<T = unknown> {
   success: true
