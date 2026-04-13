@@ -260,7 +260,11 @@ if (navToggle && siteNav) {
     { selector: "#proof .proof-group:nth-of-type(5) .proof-grid .proof-card:nth-child(4) img", section: "proof-affiliate", slot: "item-4", attr: "src", syncAlt: true },
   ];
 
-  const PUBLISHED_CONFIG_URL = "https://roman-agency-api.dong141220047.workers.dev/api/published-config";
+  const ROMAN_API_BASE = (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1")
+    ? "http://127.0.0.1:8787"
+    : "https://roman-agency-api.dong141220047.workers.dev";
+
+  const PUBLISHED_CONFIG_URL = ROMAN_API_BASE + "/api/published-config";
 
   try {
     const response = await fetch(PUBLISHED_CONFIG_URL, {
@@ -316,7 +320,9 @@ if (navToggle && siteNav) {
 })();
 
 /* ── Newsletter Form ── */
-const ROMAN_API = "https://roman-agency-api.dong141220047.workers.dev";
+const ROMAN_API = (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1")
+  ? "http://127.0.0.1:8787"
+  : "https://roman-agency-api.dong141220047.workers.dev";
 
 const newsletterForm = document.getElementById("newsletter-form");
 
@@ -413,6 +419,66 @@ if (newsletterForm) {
   }
 })();
 
+/* ── Dynamic Testimonials Hydration ── */
+(async function () {
+  if (!window.fetch) return;
+  const grid = document.querySelector("#testimonials .testimonials-grid");
+  if (!grid) return;
+
+  try {
+    const lang = document.documentElement.lang === "zh-CN" ? "zh"
+               : document.documentElement.lang === "ru" ? "ru"
+               : "en";
+    const res = await fetch(ROMAN_API + "/api/testimonials?lang=" + lang, {
+      headers: { Accept: "application/json" },
+    });
+    if (!res.ok) return;
+    const payload = await res.json();
+    const items = payload?.data;
+    if (!Array.isArray(items) || !items.length) return;
+
+    grid.innerHTML = "";
+
+    items.forEach((item) => {
+      const article = document.createElement("article");
+      article.className = "testimonial-card";
+      article.innerHTML = `
+        <p class="testimonial-card__text">"${escapeHtml(item.content)}"</p>
+        <div class="testimonial-card__author">
+          <span class="testimonial-card__name">${escapeHtml(item.author_name)}</span>
+          <span class="testimonial-card__role">${escapeHtml(item.author_role || "")}</span>
+        </div>
+      `;
+      grid.appendChild(article);
+    });
+
+    // Re-bind tilt effect for new cards
+    grid.querySelectorAll(".testimonial-card").forEach((card) => {
+      card.addEventListener("pointermove", (e) => {
+        const rect = card.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+        const cx = rect.width / 2;
+        const cy = rect.height / 2;
+        const rotateX = ((y - cy) / cy) * -4;
+        const rotateY = ((x - cx) / cx) * 4;
+        card.style.transform = `perspective(600px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) scale3d(1.02,1.02,1.02)`;
+      });
+      card.addEventListener("pointerleave", () => {
+        card.style.transform = "";
+      });
+    });
+  } catch {
+    // Keep hardcoded testimonials as fallback
+  }
+
+  function escapeHtml(str) {
+    const d = document.createElement("div");
+    d.textContent = str || "";
+    return d.innerHTML;
+  }
+})();
+
 /* ── Dynamic Settings Hydration (Stats + Contact) ── */
 (async function () {
   if (!window.fetch) return;
@@ -424,10 +490,8 @@ if (newsletterForm) {
     if (!res.ok) return;
     const payload = await res.json();
     const raw = payload?.data;
-    if (!Array.isArray(raw) || !raw.length) return;
-
-    const settings = {};
-    raw.forEach((s) => { settings[s.key] = s.value; });
+    if (!raw || typeof raw !== 'object') return;
+    const settings = raw;
 
     // Stats section — update data-target values for animated counters
     const statMap = {

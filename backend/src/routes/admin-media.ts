@@ -3,7 +3,10 @@ import { requireAuth } from '../middleware/auth'
 import type { AppEnv, MediaItem } from '../types'
 import { ALLOWED_IMAGE_TYPES, ALLOWED_VIDEO_TYPES, MAX_IMAGE_SIZE, MAX_VIDEO_SIZE } from '../types'
 
-const PUBLIC_MEDIA_BASE = 'https://roman-agency-api.dong141220047.workers.dev/api/public-media'
+function getPublicMediaBase(c: any): string {
+  const url = new URL(c.req.url)
+  return `${url.origin}/api/public-media`
+}
 
 export const adminMediaRoutes = new Hono<AppEnv>()
 
@@ -90,7 +93,7 @@ adminMediaRoutes.post('/media/upload', async (c) => {
   })
 
   // Get public URL served by Worker
-  const r2Url = `${PUBLIC_MEDIA_BASE}/${section}/${uuid}.${ext}`
+  const r2Url = `${getPublicMediaBase(c)}/${section}/${uuid}.${ext}`
 
   // Get existing sort_order max
   const maxOrder = await c.env.DB.prepare(
@@ -231,7 +234,7 @@ adminMediaRoutes.post('/media/:id/replace', async (c) => {
 
   await c.env.MEDIA.delete(existing.r2_key)
 
-  const r2Url = `${PUBLIC_MEDIA_BASE}/${existing.section}/${uuid}.${ext}`
+  const r2Url = `${getPublicMediaBase(c)}/${existing.section}/${uuid}.${ext}`
 
   await c.env.DB.prepare(
     `UPDATE media_items
