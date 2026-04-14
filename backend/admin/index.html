@@ -94,18 +94,21 @@
             <button class="media-section-tab" data-section="meta">Meta</button>
           </div>
         </div>
-        <div class="toolbar-right" style="display:flex;gap:12px;flex-wrap:wrap;justify-content:flex-end;">
+        <div class="toolbar-right" style="display:flex;gap:12px;flex-wrap:wrap;justify-content:flex-end;align-items:flex-start;">
+          <div class="publish-history-dropdown" id="publish-history-dropdown">
+            <button class="btn btn--ghost btn--sm" id="publish-history-toggle" type="button">
+              History <span style="font-size:10px;">&#9660;</span>
+            </button>
+            <div class="publish-history-panel" id="publish-history-panel" hidden>
+              <div class="publish-history-panel__title">Publish History</div>
+              <div id="publish-history-box">No publish history yet.</div>
+            </div>
+          </div>
           <button class="btn btn--primary" id="publish-btn">Publish Changes</button>
           <button class="btn btn--primary" id="upload-btn">
             <svg viewBox="0 0 24 24" fill="none" width="16" height="16"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
             Upload Media
           </button>
-        </div>
-      </div>
-      <div class="settings-grid" style="margin-bottom:20px;grid-template-columns:1fr;gap:16px;">
-        <div class="settings-group">
-          <div class="settings-group__title">Publish History</div>
-          <div id="publish-history-box" class="footer-copy footer-copy--small">No publish history yet.</div>
         </div>
       </div>
       <div class="media-grid" id="media-grid">

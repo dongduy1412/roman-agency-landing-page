@@ -469,6 +469,38 @@ body.login-page {
   margin-top: 4px;
 }
 
+/* ── Publish History Dropdown ──────────────────────── */
+.publish-history-dropdown {
+  position: relative;
+}
+
+.publish-history-panel {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  margin-top: 6px;
+  width: 320px;
+  max-height: 280px;
+  overflow-y: auto;
+  background: var(--bg-2);
+  border: 1px solid var(--border-2);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 14px;
+  z-index: 50;
+}
+
+.publish-history-panel[hidden] { display: none; }
+
+.publish-history-panel__title {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--gold);
+  margin-bottom: 10px;
+}
+
 .visibility-toggle {
   display: flex;
   align-items: center;
