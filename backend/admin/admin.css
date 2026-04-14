@@ -214,6 +214,8 @@ body.login-page {
   min-width: 0;
   display: flex;
   flex-direction: column;
+  height: 100vh;
+  overflow-y: auto;
 }
 
 .topbar {
@@ -290,6 +292,39 @@ body.login-page {
   display: flex;
   flex-direction: column;
   gap: 20px;
+}
+
+/* ── Media Section Tabs (horizontal) ───────────────── */
+.media-section-tabs {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 4px;
+}
+
+.media-section-tab {
+  border: 1px solid var(--border);
+  background: var(--bg-3);
+  color: var(--text-dim);
+  border-radius: 999px;
+  padding: 6px 14px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  font-family: inherit;
+  white-space: nowrap;
+}
+
+.media-section-tab:hover {
+  border-color: var(--border-2);
+  color: var(--text);
+}
+
+.media-section-tab.is-active {
+  background: var(--gold-dim);
+  border-color: rgba(242,202,80,0.35);
+  color: var(--gold);
 }
 
 .media-group {

@@ -26,6 +26,18 @@ adminFaqRoutes.get('/faqs', async (c) => {
   return c.json({ success: true, data: results, meta: { total: results.length } })
 })
 
+// ── GET /api/admin/faqs/:id ──────────────────────────────
+adminFaqRoutes.get('/faqs/:id', async (c) => {
+  const id = parseInt(c.req.param('id'))
+  const faq = await c.env.DB.prepare(`SELECT * FROM faqs WHERE id = ?`).bind(id).first<FAQ>()
+
+  if (!faq) {
+    return c.json({ success: false, error: { code: 'NOT_FOUND', message: 'FAQ not found', status: 404 } }, 404)
+  }
+
+  return c.json({ success: true, data: faq })
+})
+
 // ── POST /api/admin/faqs ─────────────────────────────────
 adminFaqRoutes.post('/faqs', async (c) => {
   let body: { question: string; answer: string; lang?: string; sort_order?: number }
