@@ -66,10 +66,20 @@ npx wrangler dev
 ```bash
 curl -X POST http://localhost:8787/api/auth/setup \
   -H "Content-Type: application/json" \
-  -d '{"username":"admin","password":"your-password"}'
+  -d '{"username":"admin","password":"admin12345"}'
 ```
 
-### 6. Deploy
+### 7. Seed media (upload ảnh vào R2 local)
+
+Giữ server chạy, mở terminal mới:
+
+```bash
+npm run seed:media
+```
+
+Script tự động upload tất cả ảnh từ `admin/public/asset-preview/` vào R2 local + cập nhật DB.
+
+### 8. Deploy
 
 ```bash
 npm run deploy
