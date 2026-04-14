@@ -46,10 +46,20 @@ Server chay tai: http://localhost:8787
 ```bash
 curl -X POST http://localhost:8787/api/auth/setup \
   -H "Content-Type: application/json" \
-  -d '{"username":"admin","password":"your-password-here"}'
+  -d '{"username":"admin","password":"admin12345"}'
 ```
 
-## 7. Mo admin panel
+## 7. Seed media (upload anh vao R2 local)
+
+Giu server chay, mo terminal moi:
+
+```bash
+npm run seed:media
+```
+
+Script se tu dong upload tat ca anh tu `admin/public/asset-preview/` vao R2 local + cap nhat DB.
+
+## 8. Mo admin panel
 
 Truy cap: http://localhost:8787/admin
 
@@ -62,4 +72,5 @@ Dang nhap bang username/password vua tao.
 | `wrangler: command not found` | `bun add -g wrangler` |
 | Admin API tra 401 | Chua tao admin user (buoc 6) |
 | Admin API tra 500 | Chua chay migrations (buoc 4) |
+| Media khong co anh | Chay `npm run seed:media` (buoc 7) |
 | Khong thay admin page | Kiem tra folder `backend/admin/` co ton tai |

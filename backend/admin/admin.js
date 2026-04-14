@@ -279,6 +279,14 @@ function getAdminMediaPreviewMeta(item, previewSrc) {
 loadMedia();
 loadPublishHistory();
 
+// Media grid: mouse wheel → horizontal scroll
+document.getElementById('media-grid').addEventListener('wheel', (e) => {
+  if (e.deltaY !== 0) {
+    e.preventDefault();
+    e.currentTarget.scrollLeft += e.deltaY;
+  }
+}, { passive: false });
+
 // Publish history dropdown toggle
 const phToggle = document.getElementById('publish-history-toggle');
 const phPanel = document.getElementById('publish-history-panel');
