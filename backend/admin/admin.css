@@ -291,7 +291,7 @@ body.login-page {
 .media-grid {
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 24px;
 }
 
 /* ── Media Section Tabs (horizontal) ───────────────── */
@@ -329,22 +329,23 @@ body.login-page {
 
 .media-group {
   display: flex;
-  flex-direction: column;
-  gap: 12px;
+  flex-direction: row;
+  align-items: flex-start;
+  gap: 16px;
 }
 
 .media-group__header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 12px;
+  flex-shrink: 0;
+  width: 120px;
+  padding-top: 6px;
 }
 
 .media-group__title {
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 700;
   color: var(--text);
   text-transform: capitalize;
+  margin-bottom: 2px;
 }
 
 .media-group__meta {
@@ -354,9 +355,18 @@ body.login-page {
 
 .media-group__grid {
   display: flex;
-  flex-wrap: wrap;
-  gap: 16px;
+  flex-wrap: nowrap;
+  gap: 12px;
+  overflow-x: auto;
+  flex: 1;
+  min-width: 0;
+  padding-bottom: 6px;
 }
+
+/* Scrollbar styling */
+.media-group__grid::-webkit-scrollbar { height: 5px; }
+.media-group__grid::-webkit-scrollbar-track { background: transparent; }
+.media-group__grid::-webkit-scrollbar-thumb { background: var(--border-2); border-radius: 4px; }
 
 .media-card {
   background: var(--bg-2);
@@ -364,7 +374,8 @@ body.login-page {
   border-radius: var(--radius);
   overflow: hidden;
   transition: border-color 0.2s;
-  width: 200px;
+  width: 180px;
+  min-width: 180px;
   flex-shrink: 0;
 }
 
@@ -388,14 +399,14 @@ body.login-page {
   font-size: 12px;
 }
 
-.media-card__body { padding: 10px 12px; }
+.media-card__body { padding: 8px 10px; }
 
 .media-card__section-row {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  gap: 8px;
-  margin-bottom: 4px;
+  gap: 6px;
+  margin-bottom: 2px;
 }
 
 .media-card__section {
