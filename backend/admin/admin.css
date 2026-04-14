@@ -353,8 +353,8 @@ body.login-page {
 }
 
 .media-group__grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  display: flex;
+  flex-wrap: wrap;
   gap: 16px;
 }
 
@@ -364,6 +364,8 @@ body.login-page {
   border-radius: var(--radius);
   overflow: hidden;
   transition: border-color 0.2s;
+  width: 200px;
+  flex-shrink: 0;
 }
 
 .media-card:hover { border-color: var(--border-2); }
