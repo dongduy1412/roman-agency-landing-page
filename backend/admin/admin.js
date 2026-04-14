@@ -258,7 +258,8 @@ function getAdminMediaPreviewUrl(item) {
     return `./public/asset-preview/${encodeURIComponent(item.file_name)}`;
   }
 
-  return item.r2_url;
+  // Fallback: try asset-preview by file_name anyway (covers seed data)
+  return item.r2_url || `./public/asset-preview/${encodeURIComponent(item.file_name)}`;
 }
 
 function getAdminMediaPreviewMeta(item, previewSrc) {
