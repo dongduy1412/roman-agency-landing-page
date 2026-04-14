@@ -78,18 +78,21 @@
     <section class="tab-panel is-active" data-panel="media">
       <div class="panel-toolbar">
         <div class="toolbar-left">
-          <select id="media-section-filter" class="select">
-            <option value="">All Sections</option>
-            <option value="hero">Hero</option>
-            <option value="proof-campaign">Proof — Campaign</option>
-            <option value="proof-system">Proof — System</option>
-            <option value="proof-bm">Proof — Business Managers</option>
-            <option value="proof-sigma">Proof — SiGMA World</option>
-            <option value="proof-affiliate">Proof — Affiliate World</option>
-            <option value="services">Services</option>
-            <option value="resources">Resources</option>
-            <option value="brand">Brand / Logo</option>
-          </select>
+          <div class="media-section-tabs" id="media-section-tabs">
+            <button class="media-section-tab is-active" data-section="">All</button>
+            <button class="media-section-tab" data-section="hero">Hero</button>
+            <button class="media-section-tab" data-section="brand">Brand</button>
+            <button class="media-section-tab" data-section="favicon">Favicon</button>
+            <button class="media-section-tab" data-section="services">Services</button>
+            <button class="media-section-tab" data-section="resources">Resources</button>
+            <button class="media-section-tab" data-section="marquee">Marquee</button>
+            <button class="media-section-tab" data-section="proof-campaign">Proof — Campaign</button>
+            <button class="media-section-tab" data-section="proof-system">Proof — System</button>
+            <button class="media-section-tab" data-section="proof-bm">Proof — BM</button>
+            <button class="media-section-tab" data-section="proof-sigma">Proof — SiGMA</button>
+            <button class="media-section-tab" data-section="proof-affiliate">Proof — Affiliate</button>
+            <button class="media-section-tab" data-section="meta">Meta</button>
+          </div>
         </div>
         <div class="toolbar-right" style="display:flex;gap:12px;flex-wrap:wrap;justify-content:flex-end;">
           <button class="btn btn--primary" id="publish-btn">Publish Changes</button>

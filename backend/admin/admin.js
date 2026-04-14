@@ -278,10 +278,18 @@ function getAdminMediaPreviewMeta(item, previewSrc) {
 loadMedia();
 loadPublishHistory();
 
-// Section filter
-document.getElementById('media-section-filter').addEventListener('change', (e) => {
-  loadMedia(e.target.value);
+// Section filter — horizontal tabs
+let activeMediaSection = '';
+document.getElementById('media-section-tabs').addEventListener('click', (e) => {
+  const tab = e.target.closest('.media-section-tab');
+  if (!tab) return;
+  document.querySelectorAll('.media-section-tab').forEach(t => t.classList.remove('is-active'));
+  tab.classList.add('is-active');
+  activeMediaSection = tab.dataset.section;
+  loadMedia(activeMediaSection);
 });
+
+function getActiveMediaSection() { return activeMediaSection; }
 
 async function toggleVisible(id, currentVisible) {
   await apiFetch(`/api/admin/media/${id}`, {
@@ -289,14 +297,14 @@ async function toggleVisible(id, currentVisible) {
     body: JSON.stringify({ is_visible: currentVisible ? 0 : 1 }),
   });
   toast(currentVisible ? 'Hidden from site' : 'Now visible on site');
-  loadMedia(document.getElementById('media-section-filter').value);
+  loadMedia(getActiveMediaSection());
 }
 
 async function deleteMedia(id, name) {
   if (!confirm(`Delete "${name}"? This will remove it from R2 as well.`)) return;
   await apiFetch(`/api/admin/media/${id}`, { method: 'DELETE' });
   toast('Media deleted');
-  loadMedia(document.getElementById('media-section-filter').value);
+  loadMedia(getActiveMediaSection());
 }
 
 async function replaceMedia(id, name) {
@@ -323,7 +331,7 @@ async function replaceMedia(id, name) {
     }
 
     toast(`Replaced ${name}`);
-    loadMedia(document.getElementById('media-section-filter').value);
+    loadMedia(getActiveMediaSection());
   };
   picker.click();
 }
