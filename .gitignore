@@ -11,9 +11,14 @@ Microsoft/
 *.db-shm
 *.db-wal
 
+# Docs
+docs/
+
 # Design docs (downloaded)
 admin-console-design*.md
 
-# Environment secrets
+# Sensitive / secrets
 .env
 .dev.vars
+backend/wrangler.toml
+backend/subscribers.json
