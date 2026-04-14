@@ -52,6 +52,63 @@ publicRoutes.get('/media', async (c) => {
   return c.json({ success: true, data: results, meta: { total: results.length } })
 })
 
+// ── GET /api/products ───────────────────────────────────
+publicRoutes.get('/products', async (c) => {
+  const category = c.req.query('category')
+  let query = `SELECT * FROM products WHERE is_visible = 1`
+  const bindings: string[] = []
+
+  if (category) {
+    query += ` AND category = ?`
+    bindings.push(category)
+  }
+
+  query += ` ORDER BY category, sub_group DESC, sort_order ASC`
+
+  const { results } = bindings.length
+    ? await c.env.DB.prepare(query).bind(...bindings).all()
+    : await c.env.DB.prepare(query).all()
+
+  return c.json({ success: true, data: results, meta: { total: results.length } })
+})
+
+// ── GET /api/payments ───────────────────────────────────
+publicRoutes.get('/payments', async (c) => {
+  const { results: methods } = await c.env.DB.prepare(
+    `SELECT * FROM payment_methods WHERE is_visible = 1 ORDER BY sort_order ASC`
+  ).all()
+
+  const { results: wallets } = await c.env.DB.prepare(
+    `SELECT * FROM wallet_addresses WHERE is_visible = 1 ORDER BY payment_method_id, sort_order ASC`
+  ).all<{ id: number; payment_method_id: number; network: string; address: string; sort_order: number }>()
+
+  const walletMap = new Map<number, typeof wallets>()
+  for (const w of wallets) {
+    if (!walletMap.has(w.payment_method_id)) walletMap.set(w.payment_method_id, [])
+    walletMap.get(w.payment_method_id)!.push(w)
+  }
+
+  const data = (methods as any[]).map((m: any) => ({
+    ...m,
+    wallets: (walletMap.get(m.id) ?? []).map(w => ({
+      id: w.id,
+      network: w.network,
+      address: w.address,
+    })),
+  }))
+
+  return c.json({ success: true, data, meta: { total: data.length } })
+})
+
+// ── GET /api/stats ──────────────────────────────────────
+publicRoutes.get('/stats', async (c) => {
+  const { results } = await c.env.DB.prepare(
+    `SELECT * FROM stats WHERE is_visible = 1 ORDER BY sort_order ASC`
+  ).all()
+
+  return c.json({ success: true, data: results, meta: { total: results.length } })
+})
+
 // ── GET /api/settings ────────────────────────────────────
 publicRoutes.get('/settings', async (c) => {
   const lang = c.req.query('lang') || 'en'

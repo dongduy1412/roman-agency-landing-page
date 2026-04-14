@@ -59,9 +59,12 @@ export interface Setting {
 export interface Subscriber {
   id: number
   email: string
+  status: string
+  ip_address: string
   created_at: string
   origin: string | null
   user_agent: string | null
+  unsubscribed_at: string | null
 }
 
 export interface AdminUser {
@@ -90,6 +93,8 @@ export interface Testimonial {
   lang: string
   sort_order: number
   is_active: number
+  avatar_r2_key: string
+  avatar_r2_url: string
   created_at: string
   updated_at: string
 }
@@ -145,3 +150,53 @@ export const ALLOWED_VIDEO_TYPES = [
 
 export const MAX_IMAGE_SIZE = 5 * 1024 * 1024   // 5 MB
 export const MAX_VIDEO_SIZE = 50 * 1024 * 1024  // 50 MB
+
+export interface Product {
+  id: number
+  category: string
+  sub_group: string
+  name: string
+  limit_text: string
+  description: string
+  icon_key: string
+  is_gold: number
+  sort_order: number
+  is_visible: number
+  created_at: string
+  updated_at: string
+}
+
+export interface PaymentMethod {
+  id: number
+  name: string
+  label: string
+  icon_key: string
+  sort_order: number
+  is_visible: number
+  created_at: string
+  updated_at: string
+}
+
+export interface WalletAddress {
+  id: number
+  payment_method_id: number
+  network: string
+  address: string
+  sort_order: number
+  is_visible: number
+}
+
+export interface Stat {
+  id: number
+  label: string
+  value: number
+  prefix: string
+  suffix: string
+  description: string
+  icon_key: string
+  card_style: string
+  sort_order: number
+  is_visible: number
+  created_at: string
+  updated_at: string
+}

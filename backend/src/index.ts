@@ -11,6 +11,9 @@ import { adminSettingsRoutes } from './routes/admin-settings'
 import { adminSubscriberRoutes } from './routes/admin-subscribers'
 import { adminPublishRoutes } from './routes/admin-publish'
 import { adminTestimonialRoutes } from './routes/admin-testimonials'
+import { adminProductRoutes } from './routes/admin-products'
+import { adminPaymentRoutes } from './routes/admin-payments'
+import { adminStatsRoutes } from './routes/admin-stats'
 
 const app = new Hono<AppEnv>()
 
@@ -63,6 +66,9 @@ app.route('/api/admin', adminSettingsRoutes)
 app.route('/api/admin', adminSubscriberRoutes)
 app.route('/api/admin', adminPublishRoutes)
 app.route('/api/admin', adminTestimonialRoutes)
+app.route('/api/admin', adminProductRoutes)
+app.route('/api/admin', adminPaymentRoutes)
+app.route('/api/admin', adminStatsRoutes)
 
 // ── 404 Handler ─────────────────────────────────────────
 app.notFound((c) => {
