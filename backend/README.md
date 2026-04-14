@@ -18,44 +18,54 @@ Backend cho **romanagency.net** được build bằng **Hono** chạy trên **Cl
 
 ```bash
 npm install
+# hoặc
+bun install
 ```
 
-### 2. Tạo D1 database và R2 bucket
+### 2. Tạo file wrangler.toml
+
+```bash
+cp wrangler.toml.example wrangler.toml
+```
+
+### 3. Tạo D1 database và R2 bucket
 
 ```bash
 # Tạo D1
 npx wrangler d1 create roman-agency-db
-# Copy database_id vào wrangler.toml
+# Copy database_id từ output paste vào wrangler.toml
 
 # Tạo R2
 npx wrangler r2 bucket create roman-agency-media
 ```
 
-### 3. Chạy migrations
+### 4. Chạy migrations (BẮT BUỘC)
 
 ```bash
-npm run db:migrate   # local
-npm run db:seed      # local seed data
-
-# Hoặc production:
-npm run db:migrate:remote
-npm run db:seed:remote
-```
-
-### 4. Tạo admin user (chạy 1 lần)
-
-```bash
-# Sau khi server chạy, gọi:
-curl -X POST http://localhost:8787/api/auth/setup \
-  -H "Content-Type: application/json" \
-  -d '{"username":"admin","password":"your-password"}'
+# Chạy TẤT CẢ migrations theo thứ tự:
+npx wrangler d1 execute roman-agency-db --local --file=./migrations/0001_initial.sql
+npx wrangler d1 execute roman-agency-db --local --file=./migrations/0002_seed.sql
+npx wrangler d1 execute roman-agency-db --local --file=./migrations/0003_publish_releases.sql
+npx wrangler d1 execute roman-agency-db --local --file=./migrations/0004_testimonials.sql
+npx wrangler d1 execute roman-agency-db --local --file=./migrations/0005_products_payments_stats.sql
+npx wrangler d1 execute roman-agency-db --local --file=./migrations/0006_subscribers_testimonials_enhance.sql
 ```
 
 ### 5. Dev local
 
 ```bash
 npm run dev
+# hoặc
+npx wrangler dev
 # Server chạy tại http://localhost:8787
+```
+
+### 6. Tạo admin user (chạy 1 lần sau khi server đã start)
+
+```bash
+curl -X POST http://localhost:8787/api/auth/setup \
+  -H "Content-Type: application/json" \
+  -d '{"username":"admin","password":"your-password"}'
 ```
 
 ### 6. Deploy
