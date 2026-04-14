@@ -279,6 +279,16 @@ function getAdminMediaPreviewMeta(item, previewSrc) {
 loadMedia();
 loadPublishHistory();
 
+// Publish history dropdown toggle
+const phToggle = document.getElementById('publish-history-toggle');
+const phPanel = document.getElementById('publish-history-panel');
+phToggle.addEventListener('click', () => {
+  phPanel.hidden = !phPanel.hidden;
+});
+document.addEventListener('click', (e) => {
+  if (!e.target.closest('#publish-history-dropdown')) phPanel.hidden = true;
+});
+
 // Section filter — horizontal tabs
 let activeMediaSection = '';
 document.getElementById('media-section-tabs').addEventListener('click', (e) => {
