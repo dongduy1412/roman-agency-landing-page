@@ -110,6 +110,9 @@ const TAB_TITLES = {
   settings: 'Site Settings',
   subscribers: 'Subscribers',
   testimonials: 'Testimonials',
+  stats: 'Stats Manager',
+  products: 'Products Manager',
+  payments: 'Payment Methods',
 };
 
 navItems.forEach(item => {
@@ -125,6 +128,9 @@ navItems.forEach(item => {
     else if (tab === 'settings') loadSettings();
     else if (tab === 'subscribers') loadSubscribers();
     else if (tab === 'testimonials') loadTestimonials();
+    else if (tab === 'stats') loadStats();
+    else if (tab === 'products') loadProducts();
+    else if (tab === 'payments') loadPayments();
   });
 });
 
@@ -1009,4 +1015,437 @@ document.getElementById('publish-btn').addEventListener('click', async () => {
 
 function escHtml(str) {
   return String(str || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+/* ═══════════════════════════════════════════════════════
+   STATS TAB
+   ═══════════════════════════════════════════════════════ */
+async function loadStats() {
+  const list = document.getElementById('stats-list');
+  list.innerHTML = '<div class="loading">Loading stats…</div>';
+
+  const data = await apiFetch('/api/admin/stats');
+  const items = data.data || [];
+
+  document.getElementById('stats-count').textContent = `${items.length} stats`;
+  list.innerHTML = '';
+
+  if (!items.length) {
+    list.innerHTML = '<div class="empty-state"><p>No stats yet.</p></div>';
+    return;
+  }
+
+  items.forEach(item => {
+    const card = document.createElement('div');
+    card.className = 'faq-card';
+    card.innerHTML = `
+      <div class="faq-card__body">
+        <div class="faq-card__q">${item.prefix || ''}${escHtml(String(item.value))}${item.suffix || ''} — ${escHtml(item.label)}</div>
+        <div class="faq-card__a">${escHtml(item.description || '')}</div>
+        <div class="faq-card__meta">Style: ${escHtml(item.card_style)} · Icon: ${escHtml(item.icon_key)} · ${item.is_visible ? 'Visible' : 'Hidden'}</div>
+      </div>
+      <div class="faq-card__actions">
+        <button class="btn btn--ghost btn--sm" onclick="openStatEdit(${item.id})">Edit</button>
+        <button class="btn btn--danger btn--sm" onclick="deleteStat(${item.id})">Delete</button>
+      </div>
+    `;
+    list.appendChild(card);
+  });
+}
+
+document.getElementById('add-stat-btn').addEventListener('click', () => {
+  document.getElementById('stat-modal-title').textContent = 'Add Stat';
+  document.getElementById('stat-edit-id').value = '';
+  document.getElementById('stat-label').value = '';
+  document.getElementById('stat-value').value = '';
+  document.getElementById('stat-prefix').value = '';
+  document.getElementById('stat-suffix').value = '';
+  document.getElementById('stat-description').value = '';
+  document.getElementById('stat-icon').value = 'dollar';
+  document.getElementById('stat-style').value = 'dark';
+  document.getElementById('stat-visible').value = '1';
+  document.getElementById('stat-error').hidden = true;
+  document.getElementById('stat-modal').hidden = false;
+});
+
+document.getElementById('stat-modal-close').addEventListener('click', () => { document.getElementById('stat-modal').hidden = true; });
+document.getElementById('stat-cancel').addEventListener('click', () => { document.getElementById('stat-modal').hidden = true; });
+
+async function openStatEdit(id) {
+  const d = await apiFetch(`/api/admin/stats/${id}`);
+  const item = d.data;
+  document.getElementById('stat-modal-title').textContent = 'Edit Stat';
+  document.getElementById('stat-edit-id').value = id;
+  document.getElementById('stat-label').value = item.label || '';
+  document.getElementById('stat-value').value = item.value ?? '';
+  document.getElementById('stat-prefix').value = item.prefix || '';
+  document.getElementById('stat-suffix').value = item.suffix || '';
+  document.getElementById('stat-description').value = item.description || '';
+  document.getElementById('stat-icon').value = item.icon_key || 'dollar';
+  document.getElementById('stat-style').value = item.card_style || 'dark';
+  document.getElementById('stat-visible').value = item.is_visible ? '1' : '0';
+  document.getElementById('stat-error').hidden = true;
+  document.getElementById('stat-modal').hidden = false;
+}
+
+document.getElementById('stat-save').addEventListener('click', async () => {
+  const id = document.getElementById('stat-edit-id').value;
+  const errEl = document.getElementById('stat-error');
+
+  const label = document.getElementById('stat-label').value.trim();
+  const value = parseInt(document.getElementById('stat-value').value);
+
+  if (!label || isNaN(value)) {
+    errEl.textContent = 'Label and numeric value are required';
+    errEl.hidden = false;
+    return;
+  }
+
+  const payload = {
+    label,
+    value,
+    prefix: document.getElementById('stat-prefix').value,
+    suffix: document.getElementById('stat-suffix').value,
+    description: document.getElementById('stat-description').value,
+    icon_key: document.getElementById('stat-icon').value,
+    card_style: document.getElementById('stat-style').value,
+    is_visible: parseInt(document.getElementById('stat-visible').value),
+  };
+
+  try {
+    if (id) {
+      await apiFetch(`/api/admin/stats/${id}`, { method: 'PATCH', body: JSON.stringify(payload) });
+    } else {
+      await apiFetch('/api/admin/stats', { method: 'POST', body: JSON.stringify(payload) });
+    }
+    toast('Stat saved');
+    document.getElementById('stat-modal').hidden = true;
+    loadStats();
+  } catch {
+    errEl.textContent = 'Failed to save stat';
+    errEl.hidden = false;
+  }
+});
+
+async function deleteStat(id) {
+  if (!confirm('Delete this stat card?')) return;
+  await apiFetch(`/api/admin/stats/${id}`, { method: 'DELETE' });
+  toast('Stat deleted');
+  loadStats();
+}
+
+/* ═══════════════════════════════════════════════════════
+   PRODUCTS TAB
+   ═══════════════════════════════════════════════════════ */
+async function loadProducts(category = '') {
+  const list = document.getElementById('products-list');
+  list.innerHTML = '<div class="loading">Loading products…</div>';
+
+  const url = category ? `/api/admin/products?category=${encodeURIComponent(category)}` : '/api/admin/products';
+  const data = await apiFetch(url);
+  const items = data.data || [];
+
+  document.getElementById('products-count').textContent = `${items.length} products`;
+  list.innerHTML = '';
+
+  if (!items.length) {
+    list.innerHTML = '<div class="empty-state"><p>No products yet.</p></div>';
+    return;
+  }
+
+  // Group by category → sub_group
+  const groups = new Map();
+  items.forEach(item => {
+    const key = item.category + (item.sub_group ? ` / ${item.sub_group}` : '');
+    if (!groups.has(key)) groups.set(key, []);
+    groups.get(key).push(item);
+  });
+
+  groups.forEach((groupItems, groupName) => {
+    const header = document.createElement('div');
+    header.className = 'faq-card';
+    header.style.background = 'var(--surface-2)';
+    header.innerHTML = `<div class="faq-card__body"><div class="faq-card__q" style="font-size:12px;letter-spacing:.06em;text-transform:uppercase;opacity:.6">${escHtml(groupName)}</div></div>`;
+    list.appendChild(header);
+
+    groupItems.forEach(item => {
+      const card = document.createElement('div');
+      card.className = 'faq-card';
+      card.innerHTML = `
+        <div class="faq-card__body">
+          <div class="faq-card__q">${item.is_gold ? '⭐ ' : ''}${escHtml(item.name)} — <span style="color:var(--gold)">${escHtml(item.limit_text)}</span></div>
+          <div class="faq-card__a">${escHtml(item.description)}</div>
+          <div class="faq-card__meta">icon: ${escHtml(item.icon_key)} · ${item.is_visible ? 'Visible' : 'Hidden'}</div>
+        </div>
+        <div class="faq-card__actions">
+          <button class="btn btn--ghost btn--sm" onclick="openProductEdit(${item.id})">Edit</button>
+          <button class="btn btn--danger btn--sm" onclick="deleteProduct(${item.id})">Delete</button>
+        </div>
+      `;
+      list.appendChild(card);
+    });
+  });
+}
+
+document.getElementById('products-category-filter').addEventListener('change', e => loadProducts(e.target.value));
+
+document.getElementById('add-product-btn').addEventListener('click', () => {
+  document.getElementById('product-modal-title').textContent = 'Add Product';
+  document.getElementById('product-edit-id').value = '';
+  document.getElementById('product-category').value = 'personal';
+  document.getElementById('product-subgroup').value = '';
+  document.getElementById('product-name').value = '';
+  document.getElementById('product-limit').value = '';
+  document.getElementById('product-desc').value = '';
+  document.getElementById('product-icon').value = 'fb';
+  document.getElementById('product-gold').value = '0';
+  document.getElementById('product-visible').value = '1';
+  document.getElementById('product-error').hidden = true;
+  document.getElementById('product-modal').hidden = false;
+});
+
+document.getElementById('product-modal-close').addEventListener('click', () => { document.getElementById('product-modal').hidden = true; });
+document.getElementById('product-cancel').addEventListener('click', () => { document.getElementById('product-modal').hidden = true; });
+
+async function openProductEdit(id) {
+  const d = await apiFetch(`/api/admin/products/${id}`);
+  const item = d.data;
+  document.getElementById('product-modal-title').textContent = 'Edit Product';
+  document.getElementById('product-edit-id').value = id;
+  document.getElementById('product-category').value = item.category || 'personal';
+  document.getElementById('product-subgroup').value = item.sub_group || '';
+  document.getElementById('product-name').value = item.name || '';
+  document.getElementById('product-limit').value = item.limit_text || '';
+  document.getElementById('product-desc').value = item.description || '';
+  document.getElementById('product-icon').value = item.icon_key || 'fb';
+  document.getElementById('product-gold').value = item.is_gold ? '1' : '0';
+  document.getElementById('product-visible').value = item.is_visible ? '1' : '0';
+  document.getElementById('product-error').hidden = true;
+  document.getElementById('product-modal').hidden = false;
+}
+
+document.getElementById('product-save').addEventListener('click', async () => {
+  const id = document.getElementById('product-edit-id').value;
+  const errEl = document.getElementById('product-error');
+
+  const name = document.getElementById('product-name').value.trim();
+  const limit_text = document.getElementById('product-limit').value.trim();
+  const description = document.getElementById('product-desc').value.trim();
+
+  if (!name || !limit_text || !description) {
+    errEl.textContent = 'Name, limit text, and description are required';
+    errEl.hidden = false;
+    return;
+  }
+
+  const payload = {
+    category: document.getElementById('product-category').value,
+    sub_group: document.getElementById('product-subgroup').value,
+    name,
+    limit_text,
+    description,
+    icon_key: document.getElementById('product-icon').value,
+    is_gold: parseInt(document.getElementById('product-gold').value),
+    is_visible: parseInt(document.getElementById('product-visible').value),
+  };
+
+  try {
+    if (id) {
+      await apiFetch(`/api/admin/products/${id}`, { method: 'PATCH', body: JSON.stringify(payload) });
+    } else {
+      await apiFetch('/api/admin/products', { method: 'POST', body: JSON.stringify(payload) });
+    }
+    toast('Product saved');
+    document.getElementById('product-modal').hidden = true;
+    loadProducts(document.getElementById('products-category-filter').value);
+  } catch {
+    errEl.textContent = 'Failed to save product';
+    errEl.hidden = false;
+  }
+});
+
+async function deleteProduct(id) {
+  if (!confirm('Delete this product card?')) return;
+  await apiFetch(`/api/admin/products/${id}`, { method: 'DELETE' });
+  toast('Product deleted');
+  loadProducts(document.getElementById('products-category-filter').value);
+}
+
+/* ═══════════════════════════════════════════════════════
+   PAYMENTS TAB
+   ═══════════════════════════════════════════════════════ */
+let currentPaymentId = null;
+let currentWallets = [];
+
+async function loadPayments() {
+  const list = document.getElementById('payments-list');
+  list.innerHTML = '<div class="loading">Loading payment methods…</div>';
+
+  const data = await apiFetch('/api/admin/payments');
+  const items = data.data || [];
+
+  document.getElementById('payments-count').textContent = `${items.length} payment methods`;
+  list.innerHTML = '';
+
+  if (!items.length) {
+    list.innerHTML = '<div class="empty-state"><p>No payment methods yet.</p></div>';
+    return;
+  }
+
+  items.forEach(item => {
+    const card = document.createElement('div');
+    card.className = 'faq-card';
+    const walletLines = (item.wallets || []).map(w =>
+      `<div class="faq-card__meta"><strong>${escHtml(w.network)}</strong>: <code style="font-size:11px">${escHtml(w.address)}</code></div>`
+    ).join('');
+    card.innerHTML = `
+      <div class="faq-card__body">
+        <div class="faq-card__q">${escHtml(item.name)} — <span style="color:var(--text-dim)">${escHtml(item.label)}</span></div>
+        <div class="faq-card__meta">icon: ${escHtml(item.icon_key)} · ${item.is_visible ? 'Visible' : 'Hidden'}</div>
+        ${walletLines}
+      </div>
+      <div class="faq-card__actions">
+        <button class="btn btn--ghost btn--sm" onclick="openPaymentEdit(${item.id})">Edit</button>
+        <button class="btn btn--danger btn--sm" onclick="deletePayment(${item.id})">Delete</button>
+      </div>
+    `;
+    list.appendChild(card);
+  });
+}
+
+document.getElementById('add-payment-btn').addEventListener('click', () => {
+  currentPaymentId = null;
+  currentWallets = [];
+  document.getElementById('payment-modal-title').textContent = 'Add Payment Method';
+  document.getElementById('payment-edit-id').value = '';
+  document.getElementById('payment-name').value = '';
+  document.getElementById('payment-label').value = '';
+  document.getElementById('payment-icon').value = '';
+  document.getElementById('payment-error').hidden = true;
+  renderWalletsList();
+  document.getElementById('payment-modal').hidden = false;
+});
+
+document.getElementById('payment-modal-close').addEventListener('click', () => { document.getElementById('payment-modal').hidden = true; });
+document.getElementById('payment-cancel').addEventListener('click', () => { document.getElementById('payment-modal').hidden = true; });
+
+async function openPaymentEdit(id) {
+  const d = await apiFetch(`/api/admin/payments/${id}`);
+  const item = d.data;
+  currentPaymentId = id;
+  currentWallets = [...(item.wallets || [])];
+  document.getElementById('payment-modal-title').textContent = 'Edit Payment Method';
+  document.getElementById('payment-edit-id').value = id;
+  document.getElementById('payment-name').value = item.name || '';
+  document.getElementById('payment-label').value = item.label || '';
+  document.getElementById('payment-icon').value = item.icon_key || '';
+  document.getElementById('payment-error').hidden = true;
+  renderWalletsList();
+  document.getElementById('payment-modal').hidden = false;
+}
+
+function renderWalletsList() {
+  const container = document.getElementById('payment-wallets-list');
+  container.innerHTML = '';
+  if (!currentWallets.length) {
+    container.innerHTML = '<div style="color:var(--text-dim);font-size:13px;margin-bottom:8px;">No wallet addresses yet.</div>';
+    return;
+  }
+  currentWallets.forEach((w, idx) => {
+    const row = document.createElement('div');
+    row.style.cssText = 'display:grid;grid-template-columns:auto 1fr auto;gap:8px;align-items:center;margin-bottom:6px;';
+    row.innerHTML = `
+      <span class="count-badge">${escHtml(w.network)}</span>
+      <code style="font-size:11px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(w.address)}</code>
+      <button class="btn btn--danger btn--sm" onclick="removeWalletFromList(${idx})">✕</button>
+    `;
+    container.appendChild(row);
+  });
+}
+
+window.removeWalletFromList = async function(idx) {
+  const w = currentWallets[idx];
+  if (w.id && currentPaymentId) {
+    // Already saved in DB — delete via API
+    try {
+      await apiFetch(`/api/admin/payments/${currentPaymentId}/wallets/${w.id}`, { method: 'DELETE' });
+    } catch {}
+  }
+  currentWallets.splice(idx, 1);
+  renderWalletsList();
+};
+
+document.getElementById('wallet-add-btn').addEventListener('click', async () => {
+  const network = document.getElementById('wallet-new-network').value.trim();
+  const address = document.getElementById('wallet-new-address').value.trim();
+  if (!network || !address) {
+    toast('Network and address are required', 'error');
+    return;
+  }
+
+  if (currentPaymentId) {
+    // Save immediately to DB
+    try {
+      const d = await apiFetch(`/api/admin/payments/${currentPaymentId}/wallets`, {
+        method: 'POST',
+        body: JSON.stringify({ network, address }),
+      });
+      currentWallets.push(d.data);
+    } catch { return; }
+  } else {
+    // Buffered — will be added after method is created
+    currentWallets.push({ network, address });
+  }
+
+  document.getElementById('wallet-new-network').value = '';
+  document.getElementById('wallet-new-address').value = '';
+  renderWalletsList();
+  toast('Wallet added');
+});
+
+document.getElementById('payment-save').addEventListener('click', async () => {
+  const id = document.getElementById('payment-edit-id').value;
+  const errEl = document.getElementById('payment-error');
+
+  const name = document.getElementById('payment-name').value.trim();
+  const label = document.getElementById('payment-label').value.trim();
+  const icon_key = document.getElementById('payment-icon').value.trim();
+
+  if (!name || !label || !icon_key) {
+    errEl.textContent = 'Name, label, and icon key are required';
+    errEl.hidden = false;
+    return;
+  }
+
+  try {
+    let methodId = id;
+    if (id) {
+      await apiFetch(`/api/admin/payments/${id}`, { method: 'PATCH', body: JSON.stringify({ name, label, icon_key }) });
+    } else {
+      const created = await apiFetch('/api/admin/payments', { method: 'POST', body: JSON.stringify({ name, label, icon_key }) });
+      methodId = created.data?.id;
+      // Add buffered wallets
+      for (const w of currentWallets) {
+        if (!w.id) {
+          await apiFetch(`/api/admin/payments/${methodId}/wallets`, {
+            method: 'POST',
+            body: JSON.stringify({ network: w.network, address: w.address }),
+          });
+        }
+      }
+    }
+    toast('Payment method saved');
+    document.getElementById('payment-modal').hidden = true;
+    loadPayments();
+  } catch {
+    errEl.textContent = 'Failed to save payment method';
+    errEl.hidden = false;
+  }
+});
+
+async function deletePayment(id) {
+  if (!confirm('Delete this payment method and all its wallet addresses?')) return;
+  await apiFetch(`/api/admin/payments/${id}`, { method: 'DELETE' });
+  toast('Payment method deleted');
+  loadPayments();
 }

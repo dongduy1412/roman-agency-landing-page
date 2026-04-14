@@ -37,6 +37,18 @@
         <svg viewBox="0 0 24 24" fill="none"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
         Testimonials
       </button>
+      <button class="nav-item" data-tab="stats">
+        <svg viewBox="0 0 24 24" fill="none"><path d="M18 20V10M12 20V4M6 20v-6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+        Stats
+      </button>
+      <button class="nav-item" data-tab="products">
+        <svg viewBox="0 0 24 24" fill="none"><rect x="2" y="3" width="20" height="14" rx="2" stroke="currentColor" stroke-width="1.5"/><path d="M8 21h8M12 17v4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+        Products
+      </button>
+      <button class="nav-item" data-tab="payments">
+        <svg viewBox="0 0 24 24" fill="none"><rect x="2" y="5" width="20" height="14" rx="2" stroke="currentColor" stroke-width="1.5"/><path d="M2 10h20" stroke="currentColor" stroke-width="1.5"/></svg>
+        Payments
+      </button>
     </nav>
 
     <div class="sidebar__footer">
@@ -154,6 +166,52 @@
       </div>
       <div class="faq-list" id="testimonial-list">
         <div class="loading">Loading testimonials…</div>
+      </div>
+    </section>
+
+    <!-- ── Tab: Stats ── -->
+    <section class="tab-panel" data-panel="stats">
+      <div class="panel-toolbar">
+        <div class="toolbar-left">
+          <span class="count-badge" id="stats-count">— stats</span>
+        </div>
+        <button class="btn btn--primary" id="add-stat-btn">+ Add Stat</button>
+      </div>
+      <div class="faq-list" id="stats-list">
+        <div class="loading">Loading stats…</div>
+      </div>
+    </section>
+
+    <!-- ── Tab: Products ── -->
+    <section class="tab-panel" data-panel="products">
+      <div class="panel-toolbar">
+        <div class="toolbar-left">
+          <span class="count-badge" id="products-count">— products</span>
+          <select id="products-category-filter" class="select" style="margin-left:12px;">
+            <option value="">All Categories</option>
+            <option value="personal">Personal Ads Account</option>
+            <option value="bm">Business Manager</option>
+            <option value="fanpage">Fanpage</option>
+            <option value="profile">Profile</option>
+          </select>
+        </div>
+        <button class="btn btn--primary" id="add-product-btn">+ Add Product</button>
+      </div>
+      <div class="faq-list" id="products-list">
+        <div class="loading">Loading products…</div>
+      </div>
+    </section>
+
+    <!-- ── Tab: Payments ── -->
+    <section class="tab-panel" data-panel="payments">
+      <div class="panel-toolbar">
+        <div class="toolbar-left">
+          <span class="count-badge" id="payments-count">— payment methods</span>
+        </div>
+        <button class="btn btn--primary" id="add-payment-btn">+ Add Payment Method</button>
+      </div>
+      <div class="faq-list" id="payments-list">
+        <div class="loading">Loading payment methods…</div>
       </div>
     </section>
   </main>
@@ -285,6 +343,196 @@
       <div class="modal__footer">
         <button class="btn btn--ghost" id="faq-cancel">Cancel</button>
         <button class="btn btn--primary" id="faq-save">Save FAQ</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Stat Edit Modal ─────────────────────────────── -->
+  <div class="modal-overlay" id="stat-modal" hidden>
+    <div class="modal" style="max-width:600px;">
+      <div class="modal__header">
+        <h2 id="stat-modal-title">Add Stat</h2>
+        <button class="modal__close" id="stat-modal-close">✕</button>
+      </div>
+      <div class="modal__body">
+        <input type="hidden" id="stat-edit-id" />
+        <div class="form-group">
+          <label>Label *</label>
+          <input type="text" id="stat-label" class="input" placeholder="e.g. Ad Spend Managed" />
+        </div>
+        <div class="form-group">
+          <label>Value * (number)</label>
+          <input type="number" id="stat-value" class="input" placeholder="e.g. 20000000" />
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+          <div class="form-group">
+            <label>Prefix</label>
+            <input type="text" id="stat-prefix" class="input" placeholder="e.g. $" />
+          </div>
+          <div class="form-group">
+            <label>Suffix</label>
+            <input type="text" id="stat-suffix" class="input" placeholder="e.g. +" />
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Description</label>
+          <input type="text" id="stat-description" class="input" placeholder="Short description" />
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+          <div class="form-group">
+            <label>Icon Key</label>
+            <select id="stat-icon" class="select">
+              <option value="dollar">dollar</option>
+              <option value="user">user</option>
+              <option value="clock">clock</option>
+              <option value="shield">shield</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Card Style</label>
+            <select id="stat-style" class="select">
+              <option value="gold">gold</option>
+              <option value="dark">dark</option>
+              <option value="green">green</option>
+              <option value="outline">outline</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Visible</label>
+          <select id="stat-visible" class="select">
+            <option value="1">Yes</option>
+            <option value="0">No</option>
+          </select>
+        </div>
+        <div id="stat-error" class="form-error" hidden></div>
+      </div>
+      <div class="modal__footer">
+        <button class="btn btn--ghost" id="stat-cancel">Cancel</button>
+        <button class="btn btn--primary" id="stat-save">Save Stat</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Product Edit Modal ───────────────────────────── -->
+  <div class="modal-overlay" id="product-modal" hidden>
+    <div class="modal" style="max-width:640px;">
+      <div class="modal__header">
+        <h2 id="product-modal-title">Add Product</h2>
+        <button class="modal__close" id="product-modal-close">✕</button>
+      </div>
+      <div class="modal__body">
+        <input type="hidden" id="product-edit-id" />
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+          <div class="form-group">
+            <label>Category *</label>
+            <select id="product-category" class="select">
+              <option value="personal">Personal Ads Account</option>
+              <option value="bm">Business Manager</option>
+              <option value="fanpage">Fanpage</option>
+              <option value="profile">Profile</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Sub Group</label>
+            <select id="product-subgroup" class="select">
+              <option value="">(none)</option>
+              <option value="new">new</option>
+              <option value="old">old</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Name *</label>
+          <input type="text" id="product-name" class="input" placeholder="e.g. Personal account (new)" />
+        </div>
+        <div class="form-group">
+          <label>Limit Text *</label>
+          <input type="text" id="product-limit" class="input" placeholder="e.g. Limit $50, No limit" />
+        </div>
+        <div class="form-group">
+          <label>Description *</label>
+          <textarea id="product-desc" class="textarea" rows="3" placeholder="Card body text…"></textarea>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;">
+          <div class="form-group">
+            <label>Icon Key</label>
+            <select id="product-icon" class="select">
+              <option value="fb">fb (Facebook)</option>
+              <option value="house">house (BM)</option>
+              <option value="page">page (Fanpage)</option>
+              <option value="profile">profile</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Gold Card</label>
+            <select id="product-gold" class="select">
+              <option value="0">No</option>
+              <option value="1">Yes ✨</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Visible</label>
+            <select id="product-visible" class="select">
+              <option value="1">Yes</option>
+              <option value="0">No</option>
+            </select>
+          </div>
+        </div>
+        <div id="product-error" class="form-error" hidden></div>
+      </div>
+      <div class="modal__footer">
+        <button class="btn btn--ghost" id="product-cancel">Cancel</button>
+        <button class="btn btn--primary" id="product-save">Save Product</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Payment Method Edit Modal ────────────────────── -->
+  <div class="modal-overlay" id="payment-modal" hidden>
+    <div class="modal" style="max-width:560px;">
+      <div class="modal__header">
+        <h2 id="payment-modal-title">Edit Payment Method</h2>
+        <button class="modal__close" id="payment-modal-close">✕</button>
+      </div>
+      <div class="modal__body">
+        <input type="hidden" id="payment-edit-id" />
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+          <div class="form-group">
+            <label>Name *</label>
+            <input type="text" id="payment-name" class="input" placeholder="e.g. USDT" />
+          </div>
+          <div class="form-group">
+            <label>Label *</label>
+            <input type="text" id="payment-label" class="input" placeholder="e.g. Tether" />
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Icon Key *</label>
+          <input type="text" id="payment-icon" class="input" placeholder="usdt / btc / eth" />
+        </div>
+        <div id="payment-error" class="form-error" hidden></div>
+
+        <!-- Wallet Addresses sub-section -->
+        <div class="settings-group" style="margin-top:20px;">
+          <div class="settings-group__title">Wallet Addresses</div>
+          <div id="payment-wallets-list" style="margin-bottom:12px;"></div>
+          <div style="display:grid;grid-template-columns:1fr 1fr auto;gap:8px;align-items:end;">
+            <div class="form-group" style="margin:0;">
+              <label>Network</label>
+              <input type="text" id="wallet-new-network" class="input" placeholder="TRC-20" />
+            </div>
+            <div class="form-group" style="margin:0;">
+              <label>Address</label>
+              <input type="text" id="wallet-new-address" class="input" placeholder="Wallet address…" />
+            </div>
+            <button class="btn btn--ghost" id="wallet-add-btn" style="height:38px;">+ Add</button>
+          </div>
+        </div>
+      </div>
+      <div class="modal__footer">
+        <button class="btn btn--ghost" id="payment-cancel">Cancel</button>
+        <button class="btn btn--primary" id="payment-save">Save Method</button>
       </div>
     </div>
   </div>
