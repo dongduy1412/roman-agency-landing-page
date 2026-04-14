@@ -1,5 +1,19 @@
 node_modules/
 dist/
 .claude/
+.wrangler/
 ffmpeg2pass-0.log
 ffmpeg2pass-0.log.mbtree
+
+# Local/system files
+Microsoft/
+*.db
+*.db-shm
+*.db-wal
+
+# Design docs (downloaded)
+admin-console-design*.md
+
+# Environment secrets
+.env
+.dev.vars
