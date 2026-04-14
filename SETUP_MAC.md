@@ -29,6 +29,7 @@ npx wrangler d1 execute roman-agency-db --local --file=./migrations/0004_testimo
 npx wrangler d1 execute roman-agency-db --local --file=./migrations/0005_products_payments_stats.sql
 npx wrangler d1 execute roman-agency-db --local --file=./migrations/0006_subscribers_testimonials_enhance.sql
 npx wrangler d1 execute roman-agency-db --local --file=./migrations/0007_seed_media.sql
+npx wrangler d1 execute roman-agency-db --local --file=./migrations/0008_i18n_products_stats_payments.sql
 ```
 
 ## 5. Start server

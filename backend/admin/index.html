@@ -429,6 +429,10 @@
       </div>
       <div class="modal__body">
         <input type="hidden" id="product-edit-id" />
+        <input type="hidden" id="product-edit-id-zh" />
+        <input type="hidden" id="product-edit-id-ru" />
+        <input type="hidden" id="product-edit-sort-order" />
+
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
           <div class="form-group">
             <label>Category *</label>
@@ -448,18 +452,6 @@
             </select>
           </div>
         </div>
-        <div class="form-group">
-          <label>Name *</label>
-          <input type="text" id="product-name" class="input" placeholder="e.g. Personal account (new)" />
-        </div>
-        <div class="form-group">
-          <label>Limit Text *</label>
-          <input type="text" id="product-limit" class="input" placeholder="e.g. Limit $50, No limit" />
-        </div>
-        <div class="form-group">
-          <label>Description *</label>
-          <textarea id="product-desc" class="textarea" rows="3" placeholder="Card body text…"></textarea>
-        </div>
         <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;">
           <div class="form-group">
             <label>Icon Key</label>
@@ -474,7 +466,7 @@
             <label>Gold Card</label>
             <select id="product-gold" class="select">
               <option value="0">No</option>
-              <option value="1">Yes ✨</option>
+              <option value="1">Yes</option>
             </select>
           </div>
           <div class="form-group">
@@ -485,6 +477,29 @@
             </select>
           </div>
         </div>
+
+        <div class="faq-lang-switcher" id="product-lang-switcher">
+          <button type="button" class="faq-lang-switcher__tab is-active" data-lang="en">EN</button>
+          <button type="button" class="faq-lang-switcher__tab" data-lang="zh">ZH</button>
+          <button type="button" class="faq-lang-switcher__tab" data-lang="ru">RU</button>
+        </div>
+
+        <div class="faq-lang-section">
+          <div class="faq-lang-section__label" id="product-active-lang-label">EN</div>
+          <div class="form-group">
+            <label>Name *</label>
+            <input type="text" id="product-edit-name" class="input" placeholder="Product name..." />
+          </div>
+          <div class="form-group">
+            <label>Limit Text *</label>
+            <input type="text" id="product-edit-limit" class="input" placeholder="e.g. Limit $50" />
+          </div>
+          <div class="form-group">
+            <label>Description *</label>
+            <textarea id="product-edit-desc" class="textarea" rows="3" placeholder="Card body text..."></textarea>
+          </div>
+        </div>
+
         <div id="product-error" class="form-error" hidden></div>
       </div>
       <div class="modal__footer">
