@@ -235,7 +235,7 @@ if (navToggle && siteNav) {
       ? "http://127.0.0.1:8787"
       : "https://roman-agency-api.dong141220047.workers.dev";
 
-    const res = await fetch(productsApi + "/api/products", {
+    const res = await fetch(productsApi + "/api/products?lang=" + getCurrentLang(), {
       headers: { Accept: "application/json" },
     });
     if (!res.ok) return;
@@ -361,7 +361,7 @@ if (navToggle && siteNav) {
       ? "http://127.0.0.1:8787"
       : "https://roman-agency-api.dong141220047.workers.dev";
 
-    const res = await fetch(paymentsApi + "/api/payments", {
+    const res = await fetch(paymentsApi + "/api/payments?lang=" + getCurrentLang(), {
       headers: { Accept: "application/json" },
     });
     if (!res.ok) return;
@@ -545,6 +545,13 @@ const ROMAN_API = (window.location.hostname === "localhost" || window.location.h
   ? "http://127.0.0.1:8787"
   : "https://roman-agency-api.dong141220047.workers.dev";
 
+function getCurrentLang() {
+  const htmlLang = document.documentElement.lang;
+  if (htmlLang === "zh-CN" || htmlLang === "zh") return "zh";
+  if (htmlLang === "ru") return "ru";
+  return "en";
+}
+
 const newsletterForm = document.getElementById("newsletter-form");
 
 if (newsletterForm) {
@@ -585,9 +592,7 @@ if (newsletterForm) {
   if (!faqList) return;
 
   try {
-    const lang = document.documentElement.lang === "zh-CN" ? "zh"
-               : document.documentElement.lang === "ru" ? "ru"
-               : "en";
+    const lang = getCurrentLang();
     const res = await fetch(ROMAN_API + "/api/faqs?lang=" + lang, {
       headers: { Accept: "application/json" },
     });
@@ -648,9 +653,7 @@ if (newsletterForm) {
   if (!grid) return;
 
   try {
-    const lang = document.documentElement.lang === "zh-CN" ? "zh"
-               : document.documentElement.lang === "ru" ? "ru"
-               : "en";
+    const lang = getCurrentLang();
     const res = await fetch(ROMAN_API + "/api/testimonials?lang=" + lang, {
       headers: { Accept: "application/json" },
     });
@@ -709,7 +712,7 @@ if (newsletterForm) {
     let statsHydrated = false;
 
     try {
-      const statsRes = await fetch(ROMAN_API + "/api/stats", {
+      const statsRes = await fetch(ROMAN_API + "/api/stats?lang=" + getCurrentLang(), {
         headers: { Accept: "application/json" },
       });
 
@@ -725,7 +728,7 @@ if (newsletterForm) {
       // Fall back to legacy stat_* settings below.
     }
 
-    const res = await fetch(ROMAN_API + "/api/settings?lang=en", {
+    const res = await fetch(ROMAN_API + "/api/settings?lang=" + getCurrentLang(), {
       headers: { Accept: "application/json" },
     });
     if (!res.ok) return;

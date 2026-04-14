@@ -55,8 +55,9 @@ publicRoutes.get('/media', async (c) => {
 // ── GET /api/products ───────────────────────────────────
 publicRoutes.get('/products', async (c) => {
   const category = c.req.query('category')
-  let query = `SELECT * FROM products WHERE is_visible = 1`
-  const bindings: string[] = []
+  const lang = c.req.query('lang') || 'en'
+  let query = `SELECT * FROM products WHERE is_visible = 1 AND lang = ?`
+  const bindings: string[] = [lang]
 
   if (category) {
     query += ` AND category = ?`
@@ -65,18 +66,18 @@ publicRoutes.get('/products', async (c) => {
 
   query += ` ORDER BY category, sub_group DESC, sort_order ASC`
 
-  const { results } = bindings.length
-    ? await c.env.DB.prepare(query).bind(...bindings).all()
-    : await c.env.DB.prepare(query).all()
+  const { results } = await c.env.DB.prepare(query).bind(...bindings).all()
 
-  return c.json({ success: true, data: results, meta: { total: results.length } })
+  return c.json({ success: true, data: results, meta: { lang, total: results.length } })
 })
 
 // ── GET /api/payments ───────────────────────────────────
 publicRoutes.get('/payments', async (c) => {
+  const lang = c.req.query('lang') || 'en'
+
   const { results: methods } = await c.env.DB.prepare(
-    `SELECT * FROM payment_methods WHERE is_visible = 1 ORDER BY sort_order ASC`
-  ).all()
+    `SELECT * FROM payment_methods WHERE is_visible = 1 AND lang = ? ORDER BY sort_order ASC`
+  ).bind(lang).all()
 
   const { results: wallets } = await c.env.DB.prepare(
     `SELECT * FROM wallet_addresses WHERE is_visible = 1 ORDER BY payment_method_id, sort_order ASC`
@@ -97,16 +98,18 @@ publicRoutes.get('/payments', async (c) => {
     })),
   }))
 
-  return c.json({ success: true, data, meta: { total: data.length } })
+  return c.json({ success: true, data, meta: { lang, total: data.length } })
 })
 
 // ── GET /api/stats ──────────────────────────────────────
 publicRoutes.get('/stats', async (c) => {
-  const { results } = await c.env.DB.prepare(
-    `SELECT * FROM stats WHERE is_visible = 1 ORDER BY sort_order ASC`
-  ).all()
+  const lang = c.req.query('lang') || 'en'
 
-  return c.json({ success: true, data: results, meta: { total: results.length } })
+  const { results } = await c.env.DB.prepare(
+    `SELECT * FROM stats WHERE is_visible = 1 AND lang = ? ORDER BY sort_order ASC`
+  ).bind(lang).all()
+
+  return c.json({ success: true, data: results, meta: { lang, total: results.length } })
 })
 
 // ── GET /api/settings ────────────────────────────────────

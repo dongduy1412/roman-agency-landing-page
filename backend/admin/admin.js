@@ -1168,25 +1168,34 @@ async function loadProducts(category = '') {
   const list = document.getElementById('products-list');
   list.innerHTML = '<div class="loading">Loading products…</div>';
 
-  const url = category ? `/api/admin/products?category=${encodeURIComponent(category)}` : '/api/admin/products';
-  const data = await apiFetch(url);
-  const items = data.data || [];
+  const data = await Promise.all([
+    apiFetch(category ? `/api/admin/products?category=${encodeURIComponent(category)}&lang=en` : '/api/admin/products?lang=en'),
+    apiFetch(category ? `/api/admin/products?category=${encodeURIComponent(category)}&lang=zh` : '/api/admin/products?lang=zh'),
+    apiFetch(category ? `/api/admin/products?category=${encodeURIComponent(category)}&lang=ru` : '/api/admin/products?lang=ru'),
+  ]);
+  const enItems = data[0].data || [];
+  const zhItems = data[1].data || [];
+  const ruItems = data[2].data || [];
 
-  document.getElementById('products-count').textContent = `${items.length} products`;
+  document.getElementById('products-count').textContent = `${enItems.length} products (EN)`;
   list.innerHTML = '';
 
-  if (!items.length) {
+  if (!enItems.length) {
     list.innerHTML = '<div class="empty-state"><p>No products yet.</p></div>';
     return;
   }
 
   // Group by category → sub_group
   const groups = new Map();
-  items.forEach(item => {
+  enItems.forEach(item => {
     const key = item.category + (item.sub_group ? ` / ${item.sub_group}` : '');
     if (!groups.has(key)) groups.set(key, []);
     groups.get(key).push(item);
   });
+
+  // Build zh/ru lookup by sort_order + category
+  const zhMap = new Map(); zhItems.forEach(i => zhMap.set(`${i.category}-${i.sub_group}-${i.sort_order}`, i));
+  const ruMap = new Map(); ruItems.forEach(i => ruMap.set(`${i.category}-${i.sub_group}-${i.sort_order}`, i));
 
   groups.forEach((groupItems, groupName) => {
     const header = document.createElement('div');
@@ -1196,17 +1205,22 @@ async function loadProducts(category = '') {
     list.appendChild(header);
 
     groupItems.forEach(item => {
+      const lookupKey = `${item.category}-${item.sub_group}-${item.sort_order}`;
+      const zhItem = zhMap.get(lookupKey);
+      const ruItem = ruMap.get(lookupKey);
+      const langs = [zhItem ? 'ZH' : '', ruItem ? 'RU' : ''].filter(Boolean).join(' ');
+
       const card = document.createElement('div');
       card.className = 'faq-card';
       card.innerHTML = `
         <div class="faq-card__body">
-          <div class="faq-card__q">${item.is_gold ? '⭐ ' : ''}${escHtml(item.name)} — <span style="color:var(--gold)">${escHtml(item.limit_text)}</span></div>
+          <div class="faq-card__q">${item.is_gold ? '&#11088; ' : ''}${escHtml(item.name)} — <span style="color:var(--gold)">${escHtml(item.limit_text)}</span></div>
           <div class="faq-card__a">${escHtml(item.description)}</div>
-          <div class="faq-card__meta">icon: ${escHtml(item.icon_key)} · ${item.is_visible ? 'Visible' : 'Hidden'}</div>
+          <div class="faq-card__meta">icon: ${escHtml(item.icon_key)} · ${item.is_visible ? 'Visible' : 'Hidden'} ${langs ? '· <span style="color:var(--green)">' + langs + '</span>' : ''}</div>
         </div>
         <div class="faq-card__actions">
-          <button class="btn btn--ghost btn--sm" onclick="openProductEdit(${item.id})">Edit</button>
-          <button class="btn btn--danger btn--sm" onclick="deleteProduct(${item.id})">Delete</button>
+          <button class="btn btn--ghost btn--sm" onclick="openProductEdit(${item.id}, ${zhItem ? zhItem.id : 'null'}, ${ruItem ? ruItem.id : 'null'}, ${item.sort_order})">Edit</button>
+          <button class="btn btn--danger btn--sm" onclick="deleteProduct(${item.id}, ${zhItem ? zhItem.id : 'null'}, ${ruItem ? ruItem.id : 'null'})">Delete</button>
         </div>
       `;
       list.appendChild(card);
@@ -1216,17 +1230,56 @@ async function loadProducts(category = '') {
 
 document.getElementById('products-category-filter').addEventListener('change', e => loadProducts(e.target.value));
 
+// ── Product multi-lang draft ──
+let activeProductLang = 'en';
+const productDraft = {
+  en: { name: '', limit_text: '', description: '' },
+  zh: { name: '', limit_text: '', description: '' },
+  ru: { name: '', limit_text: '', description: '' },
+};
+
+function syncActiveProductDraft() {
+  productDraft[activeProductLang].name = document.getElementById('product-edit-name').value;
+  productDraft[activeProductLang].limit_text = document.getElementById('product-edit-limit').value;
+  productDraft[activeProductLang].description = document.getElementById('product-edit-desc').value;
+}
+
+function renderActiveProductLang() {
+  const langLabels = { en: 'EN', zh: 'ZH', ru: 'RU' };
+  document.getElementById('product-active-lang-label').textContent = langLabels[activeProductLang];
+  document.getElementById('product-edit-name').value = productDraft[activeProductLang].name;
+  document.getElementById('product-edit-limit').value = productDraft[activeProductLang].limit_text;
+  document.getElementById('product-edit-desc').value = productDraft[activeProductLang].description;
+
+  document.querySelectorAll('#product-lang-switcher .faq-lang-switcher__tab').forEach(t => {
+    t.classList.toggle('is-active', t.dataset.lang === activeProductLang);
+  });
+}
+
+document.querySelectorAll('#product-lang-switcher .faq-lang-switcher__tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    syncActiveProductDraft();
+    activeProductLang = tab.dataset.lang;
+    renderActiveProductLang();
+  });
+});
+
 document.getElementById('add-product-btn').addEventListener('click', () => {
   document.getElementById('product-modal-title').textContent = 'Add Product';
   document.getElementById('product-edit-id').value = '';
+  document.getElementById('product-edit-id-zh').value = '';
+  document.getElementById('product-edit-id-ru').value = '';
+  document.getElementById('product-edit-sort-order').value = '';
   document.getElementById('product-category').value = 'personal';
   document.getElementById('product-subgroup').value = '';
-  document.getElementById('product-name').value = '';
-  document.getElementById('product-limit').value = '';
-  document.getElementById('product-desc').value = '';
   document.getElementById('product-icon').value = 'fb';
   document.getElementById('product-gold').value = '0';
   document.getElementById('product-visible').value = '1';
+  productDraft.en = { name: '', limit_text: '', description: '' };
+  productDraft.zh = { name: '', limit_text: '', description: '' };
+  productDraft.ru = { name: '', limit_text: '', description: '' };
+  activeProductLang = 'en';
+  renderActiveProductLang();
   document.getElementById('product-error').hidden = true;
   document.getElementById('product-modal').hidden = false;
 });
@@ -1234,54 +1287,109 @@ document.getElementById('add-product-btn').addEventListener('click', () => {
 document.getElementById('product-modal-close').addEventListener('click', () => { document.getElementById('product-modal').hidden = true; });
 document.getElementById('product-cancel').addEventListener('click', () => { document.getElementById('product-modal').hidden = true; });
 
-async function openProductEdit(id) {
-  const d = await apiFetch(`/api/admin/products/${id}`);
-  const item = d.data;
+async function openProductEdit(enId, zhId, ruId, sortOrder) {
   document.getElementById('product-modal-title').textContent = 'Edit Product';
-  document.getElementById('product-edit-id').value = id;
-  document.getElementById('product-category').value = item.category || 'personal';
-  document.getElementById('product-subgroup').value = item.sub_group || '';
-  document.getElementById('product-name').value = item.name || '';
-  document.getElementById('product-limit').value = item.limit_text || '';
-  document.getElementById('product-desc').value = item.description || '';
-  document.getElementById('product-icon').value = item.icon_key || 'fb';
-  document.getElementById('product-gold').value = item.is_gold ? '1' : '0';
-  document.getElementById('product-visible').value = item.is_visible ? '1' : '0';
+  document.getElementById('product-edit-id').value = enId || '';
+  document.getElementById('product-edit-id-zh').value = zhId || '';
+  document.getElementById('product-edit-id-ru').value = ruId || '';
+  document.getElementById('product-edit-sort-order').value = sortOrder || '';
+
+  productDraft.en = { name: '', limit_text: '', description: '' };
+  productDraft.zh = { name: '', limit_text: '', description: '' };
+  productDraft.ru = { name: '', limit_text: '', description: '' };
+
+  const [enData, zhData, ruData] = await Promise.all([
+    enId ? apiFetch(`/api/admin/products/${enId}`) : Promise.resolve(null),
+    zhId ? apiFetch(`/api/admin/products/${zhId}`) : Promise.resolve(null),
+    ruId ? apiFetch(`/api/admin/products/${ruId}`) : Promise.resolve(null),
+  ]);
+
+  const en = enData?.data;
+  if (en) {
+    document.getElementById('product-category').value = en.category || 'personal';
+    document.getElementById('product-subgroup').value = en.sub_group || '';
+    document.getElementById('product-icon').value = en.icon_key || 'fb';
+    document.getElementById('product-gold').value = en.is_gold ? '1' : '0';
+    document.getElementById('product-visible').value = en.is_visible ? '1' : '0';
+    productDraft.en = { name: en.name || '', limit_text: en.limit_text || '', description: en.description || '' };
+  }
+  if (zhData?.data) {
+    const zh = zhData.data;
+    productDraft.zh = { name: zh.name || '', limit_text: zh.limit_text || '', description: zh.description || '' };
+  }
+  if (ruData?.data) {
+    const ru = ruData.data;
+    productDraft.ru = { name: ru.name || '', limit_text: ru.limit_text || '', description: ru.description || '' };
+  }
+
+  activeProductLang = 'en';
+  renderActiveProductLang();
   document.getElementById('product-error').hidden = true;
   document.getElementById('product-modal').hidden = false;
 }
 
 document.getElementById('product-save').addEventListener('click', async () => {
-  const id = document.getElementById('product-edit-id').value;
+  syncActiveProductDraft();
+  const enId = document.getElementById('product-edit-id').value;
+  const zhId = document.getElementById('product-edit-id-zh').value;
+  const ruId = document.getElementById('product-edit-id-ru').value;
   const errEl = document.getElementById('product-error');
 
-  const name = document.getElementById('product-name').value.trim();
-  const limit_text = document.getElementById('product-limit').value.trim();
-  const description = document.getElementById('product-desc').value.trim();
+  const enName = productDraft.en.name.trim();
+  const enLimit = productDraft.en.limit_text.trim();
+  const enDesc = productDraft.en.description.trim();
 
-  if (!name || !limit_text || !description) {
-    errEl.textContent = 'Name, limit text, and description are required';
+  if (!enName || !enLimit || !enDesc) {
+    errEl.textContent = 'English name, limit text, and description are required';
     errEl.hidden = false;
     return;
   }
 
-  const payload = {
+  const shared = {
     category: document.getElementById('product-category').value,
     sub_group: document.getElementById('product-subgroup').value,
-    name,
-    limit_text,
-    description,
     icon_key: document.getElementById('product-icon').value,
     is_gold: parseInt(document.getElementById('product-gold').value),
     is_visible: parseInt(document.getElementById('product-visible').value),
   };
 
   try {
-    if (id) {
-      await apiFetch(`/api/admin/products/${id}`, { method: 'PATCH', body: JSON.stringify(payload) });
+    // EN
+    if (enId) {
+      await apiFetch(`/api/admin/products/${enId}`, { method: 'PATCH', body: JSON.stringify({ ...shared, name: enName, limit_text: enLimit, description: enDesc }) });
     } else {
-      await apiFetch('/api/admin/products', { method: 'POST', body: JSON.stringify(payload) });
+      const created = await apiFetch('/api/admin/products', { method: 'POST', body: JSON.stringify({ ...shared, name: enName, limit_text: enLimit, description: enDesc, lang: 'en' }) });
+      if (!document.getElementById('product-edit-sort-order').value && created?.data?.sort_order) {
+        document.getElementById('product-edit-sort-order').value = created.data.sort_order;
+      }
     }
+
+    const sortOrder = parseInt(document.getElementById('product-edit-sort-order').value) || 0;
+
+    // ZH
+    const zhName = productDraft.zh.name.trim();
+    const zhLimit = productDraft.zh.limit_text.trim();
+    const zhDesc = productDraft.zh.description.trim();
+    if (zhName && zhLimit && zhDesc) {
+      if (zhId) {
+        await apiFetch(`/api/admin/products/${zhId}`, { method: 'PATCH', body: JSON.stringify({ ...shared, name: zhName, limit_text: zhLimit, description: zhDesc }) });
+      } else {
+        await apiFetch('/api/admin/products', { method: 'POST', body: JSON.stringify({ ...shared, name: zhName, limit_text: zhLimit, description: zhDesc, lang: 'zh', sort_order: sortOrder }) });
+      }
+    }
+
+    // RU
+    const ruName = productDraft.ru.name.trim();
+    const ruLimit = productDraft.ru.limit_text.trim();
+    const ruDesc = productDraft.ru.description.trim();
+    if (ruName && ruLimit && ruDesc) {
+      if (ruId) {
+        await apiFetch(`/api/admin/products/${ruId}`, { method: 'PATCH', body: JSON.stringify({ ...shared, name: ruName, limit_text: ruLimit, description: ruDesc }) });
+      } else {
+        await apiFetch('/api/admin/products', { method: 'POST', body: JSON.stringify({ ...shared, name: ruName, limit_text: ruLimit, description: ruDesc, lang: 'ru', sort_order: sortOrder }) });
+      }
+    }
+
     toast('Product saved');
     document.getElementById('product-modal').hidden = true;
     loadProducts(document.getElementById('products-category-filter').value);
@@ -1291,9 +1399,11 @@ document.getElementById('product-save').addEventListener('click', async () => {
   }
 });
 
-async function deleteProduct(id) {
-  if (!confirm('Delete this product card?')) return;
-  await apiFetch(`/api/admin/products/${id}`, { method: 'DELETE' });
+async function deleteProduct(enId, zhId, ruId) {
+  if (!confirm('Delete this product (all languages)?')) return;
+  if (enId) await apiFetch(`/api/admin/products/${enId}`, { method: 'DELETE' });
+  if (zhId) await apiFetch(`/api/admin/products/${zhId}`, { method: 'DELETE' });
+  if (ruId) await apiFetch(`/api/admin/products/${ruId}`, { method: 'DELETE' });
   toast('Product deleted');
   loadProducts(document.getElementById('products-category-filter').value);
 }

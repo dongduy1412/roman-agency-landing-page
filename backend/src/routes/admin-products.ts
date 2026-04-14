@@ -9,14 +9,15 @@ adminProductRoutes.use('*', requireAuth)
 // ── GET /api/admin/products ──────────────────────────────
 adminProductRoutes.get('/products', async (c) => {
   const category = c.req.query('category')
-  let query = `SELECT * FROM products`
+  const lang = c.req.query('lang')
+  const conditions: string[] = []
   const bindings: string[] = []
 
-  if (category) {
-    query += ` WHERE category = ?`
-    bindings.push(category)
-  }
+  if (category) { conditions.push('category = ?'); bindings.push(category) }
+  if (lang) { conditions.push('lang = ?'); bindings.push(lang) }
 
+  let query = `SELECT * FROM products`
+  if (conditions.length) query += ` WHERE ${conditions.join(' AND ')}`
   query += ` ORDER BY category, sub_group DESC, sort_order ASC`
 
   const { results } = bindings.length
@@ -52,6 +53,7 @@ adminProductRoutes.post('/products', async (c) => {
     icon_key?: string
     is_gold?: number
     sort_order?: number
+    lang?: string
   }
 
   try {
@@ -60,7 +62,7 @@ adminProductRoutes.post('/products', async (c) => {
     return c.json({ success: false, error: { code: 'INVALID_JSON', message: 'Invalid JSON', status: 400 } }, 400)
   }
 
-  const { category, sub_group = '', name, limit_text, description, icon_key = 'fb', is_gold = 0, sort_order } = body
+  const { category, sub_group = '', name, limit_text, description, icon_key = 'fb', is_gold = 0, sort_order, lang = 'en' } = body
 
   if (!category?.trim() || !name?.trim() || !limit_text?.trim() || !description?.trim()) {
     return c.json({ success: false, error: { code: 'MISSING_FIELDS', message: 'category, name, limit_text, description are required', status: 400 } }, 400)
@@ -80,8 +82,8 @@ adminProductRoutes.post('/products', async (c) => {
   }
 
   const { meta } = await c.env.DB.prepare(
-    `INSERT INTO products (category, sub_group, name, limit_text, description, icon_key, is_gold, sort_order) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
-  ).bind(category, sub_group, name.trim(), limit_text.trim(), description.trim(), icon_key, is_gold ? 1 : 0, order).run()
+    `INSERT INTO products (category, sub_group, name, limit_text, description, icon_key, is_gold, sort_order, lang) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
+  ).bind(category, sub_group, name.trim(), limit_text.trim(), description.trim(), icon_key, is_gold ? 1 : 0, order, lang).run()
 
   const newItem = await c.env.DB.prepare(`SELECT * FROM products WHERE id = ?`).bind(meta.last_row_id).first<Product>()
   return c.json({ success: true, data: newItem }, 201)
